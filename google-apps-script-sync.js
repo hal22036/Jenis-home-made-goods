@@ -267,9 +267,27 @@ function replaceWebsiteOrderItems(orderItemsSheet, websiteOrders, orderRowsByCod
 
   const startRow = nextItemRow - itemRows.length;
   Logger.log(`Writing ${itemRows.length} refreshed item rows`);
+  ensureSheetHasRange(orderItemsSheet, startRow, 1, itemRows.length, 11);
   const targetRange = orderItemsSheet.getRange(startRow, 1, itemRows.length, 11);
   targetRange.clearDataValidations();
   targetRange.setValues(itemRows);
+}
+
+function ensureSheetHasRange(sheet, startRow, startColumn, rowCount, columnCount) {
+  const requiredRows = startRow + rowCount - 1;
+  const requiredColumns = startColumn + columnCount - 1;
+  const currentRows = sheet.getMaxRows();
+  const currentColumns = sheet.getMaxColumns();
+
+  if (requiredRows > currentRows) {
+    sheet.insertRowsAfter(currentRows, requiredRows - currentRows);
+    Logger.log(`Added ${requiredRows - currentRows} row${requiredRows - currentRows === 1 ? "" : "s"} to ${sheet.getName()}.`);
+  }
+
+  if (requiredColumns > currentColumns) {
+    sheet.insertColumnsAfter(currentColumns, requiredColumns - currentColumns);
+    Logger.log(`Added ${requiredColumns - currentColumns} column${requiredColumns - currentColumns === 1 ? "" : "s"} to ${sheet.getName()}.`);
+  }
 }
 
 function normalizeOrderItems(items) {
