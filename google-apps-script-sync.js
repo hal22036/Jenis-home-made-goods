@@ -220,18 +220,28 @@ function replaceWebsiteOrderItems(orderItemsSheet, websiteOrders, orderRowsByCod
 
   const itemRows = [];
   let nextItemRow = lastFilledRow(orderItemsSheet, 1) + 1;
+  let activeOrderCount = 0;
+  let activeOrderItemCount = 0;
 
   websiteOrders
     .filter(order => String(order.fulfillment_status || "").toLowerCase() !== "canceled")
     .forEach(order => {
+      activeOrderCount += 1;
       const orderRow = orderRowsByCode.get(order.order_code);
-      if (!orderRow) return;
+      const orderItems = normalizeOrderItems(order.items);
+
+      if (!orderRow) {
+        Logger.log(`Skipping order items for ${order.order_code}: matching Orders row was not found.`);
+        return;
+      }
 
       const orderId = orderRow.orderId;
       const orderDate = localDate(order.pickup_date);
       const orderNotes = sheetOrderNotes(order);
 
-      (order.items || []).forEach(item => {
+      activeOrderItemCount += orderItems.length;
+
+      orderItems.forEach(item => {
         const itemRowNumber = nextItemRow++;
 
         itemRows.push([
@@ -251,13 +261,32 @@ function replaceWebsiteOrderItems(orderItemsSheet, websiteOrders, orderRowsByCod
     });
 
   if (!itemRows.length) {
-    Logger.log("No active website order item rows to write.");
+    Logger.log(`No active website order item rows to write. Active orders: ${activeOrderCount}; returned order items: ${activeOrderItemCount}.`);
     return;
   }
 
   const startRow = nextItemRow - itemRows.length;
   Logger.log(`Writing ${itemRows.length} refreshed item rows`);
-  orderItemsSheet.getRange(startRow, 1, itemRows.length, 11).setValues(itemRows);
+  const targetRange = orderItemsSheet.getRange(startRow, 1, itemRows.length, 11);
+  targetRange.clearDataValidations();
+  targetRange.setValues(itemRows);
+}
+
+function normalizeOrderItems(items) {
+  if (Array.isArray(items)) return items;
+  if (!items) return [];
+
+  if (typeof items === "string") {
+    try {
+      const parsed = JSON.parse(items);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      Logger.log(`Could not parse order items JSON: ${error.message}`);
+      return [];
+    }
+  }
+
+  return [];
 }
 
 function deleteExistingWebsiteOrderItems(sheet, websiteOrderCodes) {
@@ -312,7 +341,8 @@ function markInvoiceSent(orderCode) {
 }
 
 function callSupabaseRpc(functionName, payload) {
-  const response = UrlFetchApp.fetch(`${SUPABASE_URL}/rest/v1/rpc/${functionName}`, {
+  const url = `${SUPABASE_URL}/rest/v1/rpc/${functionName}`;
+  const requestOptions = {
     method: "post",
     contentType: "application/json",
     headers: {
@@ -321,7 +351,24 @@ function callSupabaseRpc(functionName, payload) {
     },
     payload: JSON.stringify(payload),
     muteHttpExceptions: true
-  });
+  };
+  let response;
+  let lastError;
+
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      response = UrlFetchApp.fetch(url, requestOptions);
+      break;
+    } catch (error) {
+      lastError = error;
+      Logger.log(`Supabase ${functionName} fetch attempt ${attempt} failed: ${error.message}`);
+      Utilities.sleep(attempt * 1000);
+    }
+  }
+
+  if (!response) {
+    throw new Error(`Supabase ${functionName} could not be reached after 3 tries: ${lastError.message}`);
+  }
 
   const statusCode = response.getResponseCode();
   const body = response.getContentText();
