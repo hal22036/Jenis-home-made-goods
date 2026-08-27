@@ -206,7 +206,8 @@ function showLogin() {
 async function showAdmin() {
   el.loginPanel.hidden = true;
   el.adminPageNav.hidden = false;
-  await Promise.all([loadOrders(), loadPickupDates(), loadProducts(), loadCoupons(), loadTaxSettings()]);
+  await loadPickupDates();
+  await Promise.all([loadOrders(), loadProducts(), loadCoupons(), loadTaxSettings()]);
   showAdminPage(currentAdminPage());
 }
 
@@ -357,6 +358,14 @@ function renderManualOrderDateOptions() {
   if (!el.manualItemsList.querySelector(".manual-item-row")) {
     addManualItemRow();
   }
+}
+
+function adminPickupDateOptions(selectedId) {
+  return state.pickupDates.map(date => `
+    <option value="${date.id}" ${date.id === selectedId ? "selected" : ""}>
+      ${prettyDate(date.pickup_date)}${date.is_open ? "" : " (closed)"}
+    </option>
+  `).join("");
 }
 
 function addManualItemRow(item = {}) {
@@ -873,6 +882,12 @@ function orderCardMarkup(order) {
 
       <div class="status-grid">
         <label>
+          Order date
+          <select data-pickup-date-id>
+            ${adminPickupDateOptions(order.pickup_date_id)}
+          </select>
+        </label>
+        <label>
           Payment method
           <select data-payment-method>
             ${paymentMethodOptions(order.payment_method)}
@@ -1145,6 +1160,7 @@ async function saveOrderStatus(event) {
 
   const { error } = await supabaseClient.rpc("admin_update_order_status", {
     p_order_id: card.dataset.orderId,
+    p_pickup_date_id: card.querySelector("[data-pickup-date-id]").value,
     p_payment_method: card.querySelector("[data-payment-method]").value,
     p_payment_status: card.querySelector("[data-payment-status]").value,
     p_fulfillment_status: card.querySelector("[data-fulfillment-status]").value,

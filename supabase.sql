@@ -529,6 +529,7 @@ drop function if exists public.admin_update_order_status(uuid,text,text,boolean)
 drop function if exists public.admin_update_order_status(uuid,text,text,boolean,boolean);
 drop function if exists public.admin_update_order_status(uuid,text,text,boolean,boolean,boolean,text);
 drop function if exists public.admin_update_order_status(uuid,text,text,text,boolean,boolean,boolean,text);
+drop function if exists public.admin_update_order_status(uuid,uuid,text,text,text,boolean,boolean,boolean,text);
 drop function if exists public.admin_update_order_items(uuid,jsonb);
 drop function if exists public.admin_update_order_items(uuid,integer,integer,jsonb);
 drop function if exists public.admin_archive_orders_for_pickup_date(date);
@@ -1292,6 +1293,7 @@ create or replace function public.admin_list_orders(
 returns table(
   order_id uuid,
   order_code text,
+  pickup_date_id uuid,
   pickup_date date,
   customer_name text,
   customer_email text,
@@ -1330,6 +1332,7 @@ begin
   select
     o.id,
     o.order_code,
+    o.pickup_date_id,
     d.pickup_date,
     o.customer_name,
     o.customer_email,
@@ -1384,6 +1387,7 @@ $$;
 
 create or replace function public.admin_update_order_status(
   p_order_id uuid,
+  p_pickup_date_id uuid,
   p_payment_method text,
   p_payment_status text,
   p_fulfillment_status text,
@@ -1405,9 +1409,33 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  v_order record;
+  v_capacity integer;
+  v_existing_loaves integer;
 begin
   if not public.is_admin() then
     raise exception 'Admin access required';
+  end if;
+
+  select id, pickup_date_id, total_loaves, fulfillment_status
+  into v_order
+  from public.orders
+  where id = p_order_id
+  for update;
+
+  if v_order.id is null then
+    raise exception 'Order not found';
+  end if;
+
+  select capacity
+  into v_capacity
+  from public.pickup_dates
+  where id = p_pickup_date_id
+  for update;
+
+  if v_capacity is null then
+    raise exception 'Pickup date not found';
   end if;
 
   if p_payment_method not in ('Venmo','Zelle','PayPal','CashApp','CashAtPickup') then
@@ -1422,6 +1450,19 @@ begin
     raise exception 'Invalid fulfillment status';
   end if;
 
+  if p_fulfillment_status <> 'canceled' then
+    select coalesce(sum(o.total_loaves), 0)
+    into v_existing_loaves
+    from public.orders o
+    where o.pickup_date_id = p_pickup_date_id
+      and o.id <> p_order_id
+      and o.fulfillment_status <> 'canceled';
+
+    if v_existing_loaves + coalesce(v_order.total_loaves, 0) > v_capacity then
+      raise exception 'This pickup date only has % loaf spots left', greatest(v_capacity - v_existing_loaves, 0);
+    end if;
+  end if;
+
   if (coalesce(p_invoice_requested, false) or coalesce(p_invoice_sent, false))
     and nullif(trim(coalesce(p_customer_email, '')), '') is null then
     raise exception 'Receipt email is required when a receipt is requested';
@@ -1429,6 +1470,7 @@ begin
 
   update orders
   set
+    pickup_date_id = p_pickup_date_id,
     payment_method = p_payment_method,
     payment_status = p_payment_status,
     fulfillment_status = p_fulfillment_status,
@@ -2350,8 +2392,8 @@ grant execute on function public.is_admin() to authenticated;
 revoke all on function public.admin_list_orders(boolean) from public;
 grant execute on function public.admin_list_orders(boolean) to authenticated;
 
-revoke all on function public.admin_update_order_status(uuid,text,text,text,boolean,boolean,boolean,text) from public;
-grant execute on function public.admin_update_order_status(uuid,text,text,text,boolean,boolean,boolean,text) to authenticated;
+revoke all on function public.admin_update_order_status(uuid,uuid,text,text,text,boolean,boolean,boolean,text) from public;
+grant execute on function public.admin_update_order_status(uuid,uuid,text,text,text,boolean,boolean,boolean,text) to authenticated;
 
 revoke all on function public.admin_update_order_items(uuid,integer,integer,jsonb) from public;
 grant execute on function public.admin_update_order_items(uuid,integer,integer,jsonb) to authenticated;
