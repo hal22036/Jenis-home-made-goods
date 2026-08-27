@@ -39,7 +39,8 @@ const STORE_SETTINGS = {
     Zelle: {
       label: "Zelle",
       link: "",
-      instructions: "Send payment by Zelle to 801-602-8443. Add your order code in the memo."
+      qrImage: "assets/zelle-qr.jpeg",
+      instructions: "Send payment by Zelle to jeni.hales@live.com. Add your order code in the memo."
     },
     PayPal: {
       label: "PayPal",
@@ -1296,6 +1297,7 @@ function showSuccess(result, paymentMethod, invoiceRequested, items, details, co
       </button>
       <div id="success-payment-details">
         <p>${payment.instructions}</p>
+        ${paymentQrMarkup(payment)}
         ${paymentAction}
       </div>
       <details class="edit-payment">
@@ -1399,7 +1401,19 @@ function renderSuccessPaymentDetails(paymentMethod) {
   paymentLabel.textContent = payment.label;
   paymentDetails.innerHTML = `
     <p>${payment.instructions}</p>
+    ${paymentQrMarkup(payment)}
     ${paymentAction}
+  `;
+}
+
+function paymentQrMarkup(payment) {
+  if (!payment?.qrImage) return "";
+
+  return `
+    <figure class="payment-qr">
+      <img src="${payment.qrImage}" alt="${payment.label} payment QR code" />
+      <figcaption>Scan to pay with ${payment.label}</figcaption>
+    </figure>
   `;
 }
 
