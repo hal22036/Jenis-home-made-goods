@@ -174,10 +174,36 @@
   background: #fff7d6;
 }
 
+.baking-breakdown-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
 .baking-breakdown h4 {
   margin: 0 0 4px;
   color: #4a260b;
   font-size: 1rem;
+}
+
+.weekly-income {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  color: #4a260b;
+  text-align: right;
+}
+
+.weekly-income span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.weekly-income strong {
+  font-size: 1.15rem;
 }
 
 .baking-breakdown p {

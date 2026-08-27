@@ -736,6 +736,7 @@ function bakingBreakdownMarkup(orders) {
   const breadTotals = new Map();
   const treatTotals = new Map();
   const activeOrders = orders.filter(order => !order.archived && order.fulfillment_status !== "canceled");
+  const weeklyIncomeCents = activeOrders.reduce((sum, order) => sum + Number(order.total_cents || 0), 0);
 
   activeOrders.forEach(order => {
     (order.items || []).forEach(item => {
@@ -751,7 +752,7 @@ function bakingBreakdownMarkup(orders) {
   if (!breadItems.length && !treatItems.length) {
     return `
       <aside class="baking-breakdown">
-        <h4>Active Orders Breakdown</h4>
+        ${bakingBreakdownHeaderMarkup(weeklyIncomeCents)}
         <p>No active items to bake for this date.</p>
       </aside>
     `;
@@ -759,12 +760,24 @@ function bakingBreakdownMarkup(orders) {
 
   return `
     <aside class="baking-breakdown">
-      <h4>Active Orders Breakdown</h4>
+      ${bakingBreakdownHeaderMarkup(weeklyIncomeCents)}
       <div class="baking-breakdown-sections">
         ${breakdownTableMarkup("Bread loaf orders", breadItems)}
         ${breakdownTableMarkup("Other Delicious Treats", treatItems)}
       </div>
     </aside>
+  `;
+}
+
+function bakingBreakdownHeaderMarkup(weeklyIncomeCents) {
+  return `
+    <div class="baking-breakdown-header">
+      <h4>Active Orders Breakdown</h4>
+      <div class="weekly-income">
+        <span>Weekly income</span>
+        <strong>${money(weeklyIncomeCents)}</strong>
+      </div>
+    </div>
   `;
 }
 
