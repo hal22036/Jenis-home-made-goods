@@ -11,7 +11,7 @@ Production-ready starter for a small bakery using GitHub Pages for the frontend 
 - Groups products into owner-editable menu categories.
 - Lets customers mix bread varieties while still counting against the same date capacity.
 - Prevents overselling with a Supabase transaction function that locks the selected pickup-date row before checking capacity.
-- Shows customers a short order code for payment notes instead of a long database ID.
+- Shows customers a short order number for payment notes instead of a long database ID.
 - Keeps email optional unless the customer requests an emailed receipt; phone number is required.
 - Lets the admin open a screenshot-friendly invoice from each order.
 - Canceled orders no longer count against pickup-date loaf capacity.

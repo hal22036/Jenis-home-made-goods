@@ -2,6 +2,19 @@
 
 create extension if not exists pgcrypto;
 
+create sequence if not exists public.order_code_seq
+start with 1001
+increment by 1;
+
+create or replace function public.generate_order_code()
+returns text
+language sql
+security definer
+set search_path = public
+as $$
+  select 'JBG-' || nextval('public.order_code_seq')::text;
+$$;
+
 create table if not exists public.products (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -47,7 +60,7 @@ create table if not exists public.coupons (
 
 create table if not exists public.orders (
   id uuid primary key default gen_random_uuid(),
-  order_code text not null unique default upper(substr(encode(gen_random_bytes(6), 'hex'), 1, 8)),
+  order_code text not null unique default public.generate_order_code(),
   pickup_date_id uuid not null references public.pickup_dates(id),
   customer_name text not null,
   customer_email text,
@@ -383,17 +396,30 @@ alter table public.orders
 add column if not exists order_code text;
 
 update public.orders
-set order_code = upper(substr(encode(gen_random_bytes(6), 'hex'), 1, 8))
+set order_code = public.generate_order_code()
 where order_code is null;
 
 alter table public.orders
 alter column order_code set not null;
 
 alter table public.orders
-alter column order_code set default upper(substr(encode(gen_random_bytes(6), 'hex'), 1, 8));
+alter column order_code set default public.generate_order_code();
 
 create unique index if not exists idx_orders_order_code
 on public.orders (order_code);
+
+select setval(
+  'public.order_code_seq',
+  greatest(
+    1000,
+    coalesce((
+      select max(substring(order_code from '^JBG-([0-9]+)$')::integer)
+      from public.orders
+      where order_code ~ '^JBG-[0-9]+$'
+    ), 1000)
+  ),
+  true
+);
 
 -- Public read-only view showing availability without exposing customer data.
 create or replace view public.pickup_date_status as
@@ -2302,6 +2328,9 @@ grant execute on function public.calculate_order_totals(integer,integer,text,tex
 
 revoke all on function public.calculate_order_totals(integer,integer,integer,integer,text,text,text) from public;
 grant execute on function public.calculate_order_totals(integer,integer,integer,integer,text,text,text) to anon, authenticated;
+
+revoke all on function public.generate_order_code() from public;
+grant execute on function public.generate_order_code() to anon, authenticated;
 
 revoke all on function public.get_order_invoice(text) from public;
 grant execute on function public.get_order_invoice(text) to anon, authenticated;

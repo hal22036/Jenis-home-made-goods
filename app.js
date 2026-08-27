@@ -34,23 +34,23 @@ const STORE_SETTINGS = {
     Venmo: {
       label: "Venmo",
       link: "https://venmo.com/u/Jeni-Hales",
-      instructions: "Send payment by Venmo and include your order code in the note."
+      instructions: "Send payment by Venmo and include your order number in the note."
     },
     Zelle: {
       label: "Zelle",
       link: "",
       qrImage: "assets/zelle-qr.jpeg",
-      instructions: "Send payment by Zelle to jeni.hales@live.com. Add your order code in the memo."
+      instructions: "Send payment by Zelle to jeni.hales@live.com. Add your order number in the memo."
     },
     PayPal: {
       label: "PayPal",
       link: "https://paypal.me/JeniHales",
-      instructions: "Send payment by PayPal and include your order code in the note."
+      instructions: "Send payment by PayPal and include your order number in the note."
     },
     CashApp: {
       label: "CashApp",
       link: "https://cash.app/$JeniHales10",
-      instructions: "Send payment by CashApp and include your order code in the note."
+      instructions: "Send payment by CashApp and include your order number in the note."
     },
     CashAtPickup: {
       label: "Cash at Pickup",
@@ -1280,7 +1280,7 @@ function showSuccess(result, paymentMethod, invoiceRequested, items, details, co
   el.successContent.innerHTML = `
     <dl class="receipt">
       <div><dt>${details.fulfillmentMethod === "shipping" ? "Ship date" : "Pickup"}</dt><dd>${prettyDate(state.selectedDate.pickup_date)}</dd></div>
-      <div><dt>Order code</dt><dd>${result.order_code}</dd></div>
+      <div><dt>Order number</dt><dd>${result.order_code}</dd></div>
       <div><dt>Total</dt><dd>${money(result.total_cents)}</dd></div>
       ${coupon ? `<div><dt>Coupon</dt><dd>${coupon.code} (${couponAppliesToLabel(coupon.applies_to)}) -${money(coupon.discount_cents)}</dd></div>` : ""}
       <div><dt>Payment</dt><dd data-payment-label></dd></div>
@@ -1293,7 +1293,7 @@ function showSuccess(result, paymentMethod, invoiceRequested, items, details, co
     ` : ""}
     <div class="success-actions">
       <button class="copy-button" type="button" data-copy-order-code="${result.order_code}">
-        Copy order code
+        Copy order number
       </button>
       <div id="success-payment-details">
         <p>${payment.instructions}</p>
@@ -1467,11 +1467,11 @@ async function copyOrderCode(event) {
       textarea.remove();
     }
 
-    el.copyMessage.textContent = "Order code copied.";
+    el.copyMessage.textContent = "Order number copied.";
     el.copyMessage.className = "message success";
   } catch (error) {
     console.error(error);
-    el.copyMessage.textContent = "Could not copy automatically. Select the order code and copy it manually.";
+    el.copyMessage.textContent = "Could not copy automatically. Select the order number and copy it manually.";
     el.copyMessage.className = "message error";
   }
 }

@@ -121,7 +121,7 @@ function renderInvoice(order) {
 
   content.innerHTML = `
     <dl class="receipt invoice-receipt">
-      <div><dt>Order code</dt><dd>${escapeHtml(order.order_code)}</dd></div>
+      <div><dt>Order number</dt><dd>${escapeHtml(order.order_code)}</dd></div>
       <div><dt>Order placed</dt><dd>${prettyDateTime(order.created_at)}</dd></div>
       <div><dt>${isShipping ? "Ship date" : "Pickup"}</dt><dd>${prettyDate(order.pickup_date)}${isShipping ? "" : `, ${PICKUP_WINDOW}`}</dd></div>
       <div><dt>Name</dt><dd>${escapeHtml(order.customer_name)}</dd></div>
@@ -207,7 +207,7 @@ async function loadInvoice() {
   const orderCode = new URLSearchParams(window.location.search).get("order");
 
   if (!orderCode) {
-    message.textContent = "Missing order code.";
+    message.textContent = "Missing order number.";
     message.className = "message error";
     return;
   }
