@@ -735,10 +735,10 @@ function archivePickupDateButtonMarkup(pickupDate) {
 function bakingBreakdownMarkup(orders) {
   const breadTotals = new Map();
   const treatTotals = new Map();
-  const activeOrders = orders.filter(order => !order.archived && order.fulfillment_status !== "canceled");
-  const weeklyIncomeCents = activeOrders.reduce((sum, order) => sum + Number(order.total_cents || 0), 0);
+  const countableOrders = orders.filter(order => order.fulfillment_status !== "canceled");
+  const weeklyIncomeCents = countableOrders.reduce((sum, order) => sum + Number(order.total_cents || 0), 0);
 
-  activeOrders.forEach(order => {
+  countableOrders.forEach(order => {
     (order.items || []).forEach(item => {
       const itemName = adminItemName(item);
       const targetTotals = isBreadLoafItem(item) ? breadTotals : treatTotals;
@@ -753,7 +753,7 @@ function bakingBreakdownMarkup(orders) {
     return `
       <aside class="baking-breakdown">
         ${bakingBreakdownHeaderMarkup(weeklyIncomeCents)}
-        <p>No active items to bake for this date.</p>
+        <p>No items to show for this date.</p>
       </aside>
     `;
   }
@@ -772,7 +772,7 @@ function bakingBreakdownMarkup(orders) {
 function bakingBreakdownHeaderMarkup(weeklyIncomeCents) {
   return `
     <div class="baking-breakdown-header">
-      <h4>Active Orders Breakdown</h4>
+      <h4>Orders Breakdown</h4>
       <div class="weekly-income">
         <span>Weekly income</span>
         <strong>${money(weeklyIncomeCents)}</strong>
