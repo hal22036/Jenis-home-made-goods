@@ -901,11 +901,11 @@ begin
     raise exception 'Pickup date is closed, past, or past the Wednesday 5 PM ordering cutoff';
   end if;
 
-  select coalesce(sum(total_loaves), 0)::integer
+  select coalesce(sum(o.total_loaves), 0)::integer
   into v_current
-  from orders
-  where pickup_date_id = p_pickup_date_id
-    and fulfillment_status <> 'canceled';
+  from public.orders o
+  where o.pickup_date_id = p_pickup_date_id
+    and o.fulfillment_status <> 'canceled';
 
   v_total := 0;
   v_home_bakery_total := 0;
@@ -1418,10 +1418,10 @@ begin
     raise exception 'Admin access required';
   end if;
 
-  select id, pickup_date_id, total_loaves, fulfillment_status
+  select o.id, o.pickup_date_id, o.total_loaves, o.fulfillment_status
   into v_order
-  from public.orders
-  where id = p_order_id
+  from public.orders o
+  where o.id = p_order_id
   for update;
 
   if v_order.id is null then
@@ -1468,7 +1468,7 @@ begin
     raise exception 'Receipt email is required when a receipt is requested';
   end if;
 
-  update orders
+  update public.orders as o
   set
     pickup_date_id = p_pickup_date_id,
     payment_method = p_payment_method,
@@ -1478,7 +1478,7 @@ begin
     invoice_requested = coalesce(p_invoice_requested, false) or coalesce(p_invoice_sent, false),
     invoice_sent = coalesce(p_invoice_sent, false),
     customer_email = nullif(trim(coalesce(p_customer_email, '')), '')
-  where id = p_order_id;
+  where o.id = p_order_id;
 
   if not found then
     raise exception 'Order not found';
@@ -1493,7 +1493,7 @@ begin
     o.invoice_requested,
     o.invoice_sent,
     o.customer_email
-  from orders o
+  from public.orders o
   where o.id = p_order_id;
 end;
 $$;
@@ -1799,11 +1799,11 @@ begin
     raise exception 'Pickup date not found';
   end if;
 
-  select coalesce(sum(total_loaves), 0)
+  select coalesce(sum(o.total_loaves), 0)
   into v_existing_loaves
-  from public.orders
-  where pickup_date_id = p_pickup_date_id
-    and fulfillment_status <> 'canceled';
+  from public.orders o
+  where o.pickup_date_id = p_pickup_date_id
+    and o.fulfillment_status <> 'canceled';
 
   for v_item in select * from jsonb_array_elements(p_items)
   loop
