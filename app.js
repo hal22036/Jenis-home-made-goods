@@ -9,6 +9,7 @@
 
 const SUPABASE_URL = "https://qvxrbipxxlygmmecgjxf.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_-w4Ef_bqgM_l9bY00thSpg_xohk7e9M";
+const ASSET_VERSION = "20260828-product-photos";
 
 const STORE_SETTINGS = {
   bakeryName: "Jeni's Home Made Goods",
@@ -381,8 +382,14 @@ function imageUrlFor(products) {
   return productWithImage ? cleanText(productWithImage.image_url) : "";
 }
 
+function cacheBustedAssetUrl(url) {
+  const cleanUrl = cleanText(url);
+  if (!cleanUrl || cleanUrl.includes("?") || cleanUrl.startsWith("http")) return cleanUrl;
+  return `${cleanUrl}?v=${ASSET_VERSION}`;
+}
+
 function productImageMarkup(products, altText) {
-  const imageUrl = imageUrlFor(products);
+  const imageUrl = cacheBustedAssetUrl(imageUrlFor(products));
 
   if (!imageUrl) return "";
 
@@ -399,11 +406,12 @@ function productImageMarkup(products, altText) {
 
 function invoiceItemImageMarkup(item) {
   if (!item.image_url) return "";
+  const imageUrl = cacheBustedAssetUrl(item.image_url);
 
   return `
     <img
       class="invoice-item-image"
-      src="${escapeAttribute(item.image_url)}"
+      src="${escapeAttribute(imageUrl)}"
       alt="${escapeAttribute(item.name)}"
       loading="lazy"
       onerror="this.hidden=true"

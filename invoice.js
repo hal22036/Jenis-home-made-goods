@@ -8,6 +8,7 @@ const PICKUP_WINDOW = "4-7 pm";
 const PICKUP_ADDRESS = "7140 Anchor Terrace St.";
 const GATE_CODE = "#7716";
 const CONTACT_PHONE = "801-602-8443";
+const ASSET_VERSION = "20260828-product-photos";
 
 function money(cents) {
   return new Intl.NumberFormat("en-US", {
@@ -55,15 +56,22 @@ function itemName(item) {
 
 function itemImage(item) {
   if (!item.image_url) return "";
+  const imageUrl = cacheBustedAssetUrl(item.image_url);
 
   return `
     <img
       class="invoice-item-image"
-      src="${escapeHtml(item.image_url)}"
+      src="${escapeHtml(imageUrl)}"
       alt="${escapeHtml(itemName(item))}"
       onerror="this.hidden=true"
     />
   `;
+}
+
+function cacheBustedAssetUrl(url) {
+  const cleanUrl = String(url || "").trim();
+  if (!cleanUrl || cleanUrl.includes("?") || cleanUrl.startsWith("http")) return cleanUrl;
+  return `${cleanUrl}?v=${ASSET_VERSION}`;
 }
 
 function paymentLabel(value) {
