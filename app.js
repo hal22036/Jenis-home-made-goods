@@ -9,7 +9,7 @@
 
 const SUPABASE_URL = "https://qvxrbipxxlygmmecgjxf.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_-w4Ef_bqgM_l9bY00thSpg_xohk7e9M";
-const ASSET_VERSION = "20260829-bath-body-tab";
+const ASSET_VERSION = "20260829-loaf-counter";
 
 const STORE_SETTINGS = {
   bakeryName: "Jeni's Home Made Goods",
@@ -1047,7 +1047,8 @@ function updateSummary() {
   el.capacityMessage.textContent =
     `${remaining} of ${state.selectedDate.capacity} loaf spots are currently available for ${prettyDate(state.selectedDate.pickup_date)}.`;
 
-  el.selectedCount.textContent = count;
+  el.selectedCount.textContent =
+    `You have claimed: ${count} loaf spot${count === 1 ? "" : "s"}, ${remaining} left.`;
   el.orderTotal.textContent = money(selectedTotalCents());
 }
 

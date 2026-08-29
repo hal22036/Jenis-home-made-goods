@@ -387,7 +387,7 @@ h2 {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  white-space: nowrap;
+  max-width: 100%;
   padding: 9px 12px;
   border-radius: 8px;
   background: var(--accent-soft);
