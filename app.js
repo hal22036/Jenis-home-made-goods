@@ -99,6 +99,7 @@ const el = {
   productList: document.querySelector("#product-list"),
   productTabs: document.querySelector("#product-tabs"),
   capacityMessage: document.querySelector("#capacity-message"),
+  capacityPill: document.querySelector(".capacity-pill"),
   selectedCount: document.querySelector("#selected-count"),
   orderTotal: document.querySelector("#order-total"),
   form: document.querySelector("#order-form"),
@@ -904,6 +905,7 @@ function renderProductTabs() {
     button.addEventListener("click", () => {
       state.activeProductTab = button.dataset.productTab;
       renderProducts();
+      updateSummary();
     });
   });
 }
@@ -1043,10 +1045,12 @@ function updateSummary() {
 
   const remaining = remainingForSelectedDate();
   const count = selectedCapacityUnits();
+  const showLoafCounter = state.activeProductTab === "baked-goods";
 
   el.capacityMessage.textContent =
     `${remaining} of ${state.selectedDate.capacity} loaf spots are currently available for ${prettyDate(state.selectedDate.pickup_date)}.`;
 
+  el.capacityPill.hidden = !showLoafCounter;
   el.selectedCount.textContent =
     `You have claimed: ${count} loaf spot${count === 1 ? "" : "s"}, ${remaining} left.`;
   el.orderTotal.textContent = money(selectedTotalCents());
