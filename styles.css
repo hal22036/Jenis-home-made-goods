@@ -547,6 +547,27 @@ legend {
   font-size: 0.94rem;
 }
 
+.allergy-notice {
+  margin: 12px 0 0;
+  padding: 14px 16px;
+  border: 1px solid #d5b57f;
+  border-radius: 8px;
+  background: #fff7df;
+  color: #3d2a17;
+}
+
+.allergy-notice strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--accent-dark);
+}
+
+.allergy-notice p {
+  margin: 0;
+  color: #5f4936;
+  font-size: 0.94rem;
+}
+
 .coupon-box {
   margin: 12px 0 18px;
   padding: 14px;
