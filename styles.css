@@ -349,6 +349,17 @@ h2 {
   gap: 16px;
 }
 
+.menu-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin: -8px -8px 18px;
+  padding: 8px;
+  border-bottom: 1px solid rgba(228, 216, 202, 0.82);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(10px);
+}
+
 .quantity {
   display: grid;
   grid-template-columns: 40px 34px 40px;
@@ -388,10 +399,11 @@ h2 {
   align-items: center;
   gap: 6px;
   max-width: 100%;
-  padding: 9px 12px;
+  padding: 11px 14px;
   border-radius: 8px;
   background: var(--accent-soft);
   color: var(--accent-dark);
+  box-shadow: 0 8px 20px rgba(74, 47, 24, 0.1);
   font-weight: 800;
 }
 
@@ -984,6 +996,17 @@ button[type="submit"]:disabled {
   .review-actions {
     grid-template-columns: 1fr;
     align-items: stretch;
+  }
+
+  .menu-toolbar {
+    top: 0;
+    margin: -6px -6px 16px;
+    padding: 8px 6px;
+  }
+
+  .capacity-pill {
+    justify-content: center;
+    text-align: center;
   }
 
   .section-row,
