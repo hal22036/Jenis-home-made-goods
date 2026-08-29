@@ -8,9 +8,23 @@ const state = {
   orders: [],
   pickupDates: [],
   products: [],
+  activeProductAdminTab: "baked-goods",
   coupons: [],
   taxSettings: null
 };
+
+const PRODUCT_ADMIN_TABS = [
+  {
+    id: "baked-goods",
+    label: "Baked Goods",
+    categories: ["Everyday", "Sweet", "Savory", "Turn Up the Heat", "Other Delicious Treats"]
+  },
+  {
+    id: "bath-body",
+    label: "Bath & Body",
+    categories: ["Bath & Body"]
+  }
+];
 
 const ADMIN_SETTINGS = {
   orderCutoffWeekday: 3, // 0 = Sunday, 3 = Wednesday.
@@ -34,6 +48,7 @@ const el = {
   ordersList: document.querySelector("#orders-list"),
   pickupDatesList: document.querySelector("#pickup-dates-list"),
   productsList: document.querySelector("#products-list"),
+  productAdminTabs: document.querySelector("#product-admin-tabs"),
   couponsList: document.querySelector("#coupons-list"),
   taxSettingsForm: document.querySelector("#tax-settings-form"),
   taxEnabledInput: document.querySelector("#tax-enabled-input"),
@@ -1343,12 +1358,22 @@ async function saveTaxSettings(event) {
 
 function renderProducts() {
   if (!state.products.length) {
+    renderProductAdminTabs();
     el.productsList.innerHTML = "<p class=\"muted\">No products to show.</p>";
     return;
   }
 
-  const groups = state.products.reduce((map, product) => {
-    const category = product.category || "Other";
+  renderProductAdminTabs();
+
+  const visibleProducts = productsForActiveAdminTab();
+
+  if (!visibleProducts.length) {
+    el.productsList.innerHTML = "<p class=\"muted\">No products to show in this section.</p>";
+    return;
+  }
+
+  const groups = visibleProducts.reduce((map, product) => {
+    const category = productCategory(product);
     if (!map.has(category)) map.set(category, []);
     map.get(category).push(product);
     return map;
@@ -1394,6 +1419,40 @@ function renderProducts() {
 
   el.productsList.querySelectorAll("[data-product-active], [data-product-shippable], [data-product-tax-category]").forEach(input => {
     input.addEventListener("change", saveProductFlags);
+  });
+}
+
+function renderProductAdminTabs() {
+  const tabs = availableProductAdminTabs();
+
+  if (tabs.length <= 1) {
+    el.productAdminTabs.hidden = true;
+    el.productAdminTabs.innerHTML = "";
+    if (tabs[0]) state.activeProductAdminTab = tabs[0].id;
+    return;
+  }
+
+  if (!tabs.some(tab => tab.id === state.activeProductAdminTab)) {
+    state.activeProductAdminTab = tabs[0].id;
+  }
+
+  el.productAdminTabs.hidden = false;
+  el.productAdminTabs.innerHTML = tabs.map(tab => `
+    <button
+      class="product-admin-tab ${tab.id === state.activeProductAdminTab ? "is-active" : ""}"
+      type="button"
+      data-product-admin-tab="${tab.id}"
+      aria-pressed="${tab.id === state.activeProductAdminTab ? "true" : "false"}"
+    >
+      ${tab.label}
+    </button>
+  `).join("");
+
+  el.productAdminTabs.querySelectorAll("[data-product-admin-tab]").forEach(button => {
+    button.addEventListener("click", () => {
+      state.activeProductAdminTab = button.dataset.productAdminTab;
+      renderProducts();
+    });
   });
 }
 
@@ -1455,6 +1514,24 @@ function couponAppliesToLabel(value) {
 
 function taxCategoryLabel(value) {
   return value === "general_product" ? "general product tax" : "home bakery tax";
+}
+
+function productCategory(product) {
+  return product.category || "Other";
+}
+
+function productAdminTabFor(product) {
+  const category = productCategory(product);
+  return PRODUCT_ADMIN_TABS.find(tab => tab.categories.includes(category))?.id || "baked-goods";
+}
+
+function availableProductAdminTabs() {
+  const visibleTabs = new Set(state.products.map(productAdminTabFor));
+  return PRODUCT_ADMIN_TABS.filter(tab => visibleTabs.has(tab.id));
+}
+
+function productsForActiveAdminTab() {
+  return state.products.filter(product => productAdminTabFor(product) === state.activeProductAdminTab);
 }
 
 function couponDateRange(coupon) {

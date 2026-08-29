@@ -131,6 +131,31 @@
   gap: 14px;
 }
 
+.product-admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.product-admin-tab {
+  min-height: 42px;
+  padding: 9px 16px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--accent-dark);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.product-admin-tab:hover,
+.product-admin-tab.is-active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
 .admin-order,
 .pickup-date-row,
 .admin-product-row,
@@ -657,6 +682,16 @@
   .admin-page-links {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .product-admin-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .product-admin-tab {
+    width: 100%;
+    padding-inline: 10px;
   }
 
   .admin-toolbar,
