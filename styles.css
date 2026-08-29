@@ -350,14 +350,8 @@ h2 {
 }
 
 .menu-toolbar {
-  position: sticky;
-  top: 0;
-  z-index: 5;
   margin: -8px -8px 18px;
   padding: 8px;
-  border-bottom: 1px solid rgba(228, 216, 202, 0.82);
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(10px);
 }
 
 .quantity {
@@ -396,14 +390,19 @@ h2 {
 
 .capacity-pill {
   display: inline-flex;
+  position: fixed;
+  right: max(16px, calc((100vw - 1080px) / 2 + 16px));
+  bottom: 18px;
+  z-index: 20;
   align-items: center;
   gap: 6px;
-  max-width: 100%;
+  max-width: min(420px, calc(100vw - 32px));
   padding: 11px 14px;
   border-radius: 8px;
   background: var(--accent-soft);
   color: var(--accent-dark);
-  box-shadow: 0 8px 20px rgba(74, 47, 24, 0.1);
+  border: 1px solid rgba(138, 77, 39, 0.2);
+  box-shadow: 0 14px 32px rgba(74, 47, 24, 0.2);
   font-weight: 800;
 }
 
@@ -1020,12 +1019,14 @@ button[type="submit"]:disabled {
   }
 
   .menu-toolbar {
-    top: 0;
     margin: -6px -6px 16px;
     padding: 8px 6px;
   }
 
   .capacity-pill {
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
     justify-content: center;
     text-align: center;
   }
