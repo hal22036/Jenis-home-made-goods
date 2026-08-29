@@ -9,12 +9,12 @@
 
 const SUPABASE_URL = "https://qvxrbipxxlygmmecgjxf.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_-w4Ef_bqgM_l9bY00thSpg_xohk7e9M";
-const ASSET_VERSION = "20260828-product-photos";
+const ASSET_VERSION = "20260829-bath-body-tab";
 
 const STORE_SETTINGS = {
   bakeryName: "Jeni's Home Made Goods",
   intro:
-    "Small-batch bread baked to order. Choose a future pickup date, reserve your loaves, then choose your payment option.",
+    "Small-batch goods made to order. Choose a future pickup date, build your order, then choose your payment option.",
   pickupWindow: "4-7 pm",
   pickupAddress: "7140 Anchor Terrace St.",
   gateCode: "#7716",
@@ -29,7 +29,20 @@ const STORE_SETTINGS = {
     "Sweet",
     "Savory",
     "Turn Up the Heat",
-    "Other Delicious Treats"
+    "Other Delicious Treats",
+    "Bath & Body"
+  ],
+  productTabs: [
+    {
+      id: "baked-goods",
+      label: "Baked Goods",
+      categories: ["Everyday", "Sweet", "Savory", "Turn Up the Heat", "Other Delicious Treats"]
+    },
+    {
+      id: "bath-body",
+      label: "Bath & Body",
+      categories: ["Bath & Body"]
+    }
   ],
   paymentOptions: {
     Venmo: {
@@ -66,6 +79,7 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const state = {
   dates: [],
   products: [],
+  activeProductTab: "baked-goods",
   selectedDate: null,
   quantities: {},
   coupon: null,
@@ -83,6 +97,7 @@ const el = {
   menuSection: document.querySelector("#menu-section"),
   customerSection: document.querySelector("#customer-section"),
   productList: document.querySelector("#product-list"),
+  productTabs: document.querySelector("#product-tabs"),
   capacityMessage: document.querySelector("#capacity-message"),
   selectedCount: document.querySelector("#selected-count"),
   orderTotal: document.querySelector("#order-total"),
@@ -259,6 +274,20 @@ function couponAppliesToLabel(value) {
 
 function categoryFor(product) {
   return product.category || "Everyday";
+}
+
+function productTabFor(product) {
+  const category = categoryFor(product);
+  return STORE_SETTINGS.productTabs.find(tab => tab.categories.includes(category))?.id || "baked-goods";
+}
+
+function productsForActiveTab() {
+  return state.products.filter(product => productTabFor(product) === state.activeProductTab);
+}
+
+function availableProductTabs() {
+  const productTabs = new Set(state.products.map(productTabFor));
+  return STORE_SETTINGS.productTabs.filter(tab => productTabs.has(tab.id));
 }
 
 function categorySortIndex(category) {
@@ -781,13 +810,21 @@ function selectDate(dateId) {
 
 function renderProducts() {
   el.productList.innerHTML = "";
+  renderProductTabs();
 
   if (!state.products.length) {
-    el.productList.innerHTML = "<p class=\"muted\">No active breads are listed yet.</p>";
+    el.productList.innerHTML = "<p class=\"muted\">No active items are listed yet.</p>";
     return;
   }
 
-  const productsByCategory = state.products
+  const visibleProducts = productsForActiveTab();
+
+  if (!visibleProducts.length) {
+    el.productList.innerHTML = "<p class=\"muted\">No active items are listed in this section yet.</p>";
+    return;
+  }
+
+  const productsByCategory = visibleProducts
     .slice()
     .sort((a, b) => {
       const categoryDifference =
@@ -834,6 +871,40 @@ function renderProducts() {
       });
 
     el.productList.appendChild(categorySection);
+  });
+}
+
+function renderProductTabs() {
+  const tabs = availableProductTabs();
+
+  if (tabs.length <= 1) {
+    el.productTabs.hidden = true;
+    el.productTabs.innerHTML = "";
+    if (tabs[0]) state.activeProductTab = tabs[0].id;
+    return;
+  }
+
+  if (!tabs.some(tab => tab.id === state.activeProductTab)) {
+    state.activeProductTab = tabs[0].id;
+  }
+
+  el.productTabs.hidden = false;
+  el.productTabs.innerHTML = tabs.map(tab => `
+    <button
+      class="product-tab ${tab.id === state.activeProductTab ? "is-active" : ""}"
+      type="button"
+      data-product-tab="${tab.id}"
+      aria-pressed="${tab.id === state.activeProductTab ? "true" : "false"}"
+    >
+      ${tab.label}
+    </button>
+  `).join("");
+
+  el.productTabs.querySelectorAll("[data-product-tab]").forEach(button => {
+    button.addEventListener("click", () => {
+      state.activeProductTab = button.dataset.productTab;
+      renderProducts();
+    });
   });
 }
 

@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta
     name="description"
-    content="Order small-batch bread for future bakery pickup dates."
+    content="Order small-batch baked goods and handmade bath and body items from Jeni's Home Made Goods."
   />
-  <title>Bakery Bread Orders</title>
+  <title>Jeni's Home Made Goods Orders</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <link rel="stylesheet" href="styles.css?v=20260826-cutoff-notice" />
 </head>
@@ -16,9 +16,9 @@
     <div class="wrap header-layout">
       <div>
         <img class="site-logo" src="assets/logo.png" alt="Jeni's Home Baked Goods logo" />
-        <p class="eyebrow">Fresh bread pickup orders</p>
+        <p class="eyebrow">Fresh baked goods and handmade gifts</p>
         <p data-store-intro>
-          Choose a future pickup date, build your bread order, and submit.
+          Choose a future pickup date, build your order, and submit.
         </p>
       </div>
     </div>
@@ -44,7 +44,7 @@
       <div class="section-row">
         <div>
           <p class="step">Step 2</p>
-          <h2 id="menu-heading">Choose your bread</h2>
+          <h2 id="menu-heading">Choose your items</h2>
           <p id="capacity-message" class="muted"></p>
         </div>
         <div class="capacity-pill">
@@ -53,6 +53,7 @@
         </div>
       </div>
 
+      <div class="product-tabs" id="product-tabs" aria-label="Product sections"></div>
       <div id="product-list" class="product-grid"></div>
 
       <div class="summary" aria-live="polite">
@@ -186,7 +187,7 @@
 
     <section class="panel success-panel" id="success-section" aria-labelledby="success-heading" hidden>
       <p class="step">Order received</p>
-      <h2 id="success-heading">Your loaves are reserved</h2>
+      <h2 id="success-heading">Your order is reserved</h2>
       <div id="success-content"></div>
       <p id="copy-message" class="message" role="status"></p>
       <p class="muted">
@@ -196,6 +197,6 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=20260828-product-photos"></script>
+  <script src="app.js?v=20260829-bath-body-tab"></script>
 </body>
 </html>

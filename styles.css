@@ -135,6 +135,31 @@ h2 {
   gap: 22px;
 }
 
+.product-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 4px 0 18px;
+}
+
+.product-tab {
+  min-height: 46px;
+  padding: 10px 18px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--accent-dark);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.product-tab:hover,
+.product-tab.is-active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
 .product-category {
   display: grid;
   gap: 12px;
@@ -975,6 +1000,16 @@ button[type="submit"]:disabled {
 
   .payment-grid {
     grid-template-columns: 1fr;
+  }
+
+  .product-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .product-tab {
+    width: 100%;
+    padding-inline: 10px;
   }
 
   .fulfillment-grid {
