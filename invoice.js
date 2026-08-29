@@ -157,6 +157,14 @@ function renderInvoice(order) {
 
     ${order.notes ? `<p class="admin-notes"><strong>Questions/comments:</strong> ${escapeHtml(order.notes)}</p>` : ""}
 
+    <div class="allergy-notice invoice-allergy-notice" role="note">
+      <strong>Allergy notice</strong>
+      <p>
+        Items are made in a home kitchen that may handle common allergens.
+        Cross contamination is possible.
+      </p>
+    </div>
+
     <div class="summary">
       <div class="total-lines">
         <div><span>Subtotal</span><span>${money(order.subtotal_cents || order.total_cents)}</span></div>

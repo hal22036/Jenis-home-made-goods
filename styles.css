@@ -567,6 +567,10 @@ legend {
   font-size: 0.94rem;
 }
 
+.invoice-allergy-notice {
+  margin-top: 16px;
+}
+
 .coupon-box {
   margin: 12px 0 18px;
   padding: 14px;
