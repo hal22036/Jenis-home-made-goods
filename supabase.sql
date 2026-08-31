@@ -27,6 +27,8 @@ create table if not exists public.products (
   image_url text,
   shippable boolean not null default false,
   tax_category text not null default 'home_bakery' check (tax_category in ('home_bakery','general_product')),
+  track_inventory boolean not null default false,
+  inventory_quantity integer not null default 0 check (inventory_quantity >= 0),
   active boolean not null default true,
   sort_order integer not null default 0
 );
@@ -327,11 +329,24 @@ alter table public.products
 add column if not exists tax_category text not null default 'home_bakery';
 
 alter table public.products
+add column if not exists track_inventory boolean not null default false;
+
+alter table public.products
+add column if not exists inventory_quantity integer not null default 0;
+
+alter table public.products
 drop constraint if exists products_tax_category_check;
 
 alter table public.products
 add constraint products_tax_category_check
 check (tax_category in ('home_bakery','general_product'));
+
+alter table public.products
+drop constraint if exists products_inventory_quantity_check;
+
+alter table public.products
+add constraint products_inventory_quantity_check
+check (inventory_quantity >= 0);
 
 alter table public.coupons
 add column if not exists applies_to text not null default 'items';
@@ -506,6 +521,47 @@ create policy "Admins can read admin users"
 on public.admin_users for select
 using (public.is_admin());
 
+create or replace function public.adjust_product_inventory(
+  p_product_id uuid,
+  p_quantity_delta integer
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_track_inventory boolean;
+  v_inventory_quantity integer;
+begin
+  if p_product_id is null or coalesce(p_quantity_delta, 0) = 0 then
+    return;
+  end if;
+
+  select p.track_inventory, p.inventory_quantity
+  into v_track_inventory, v_inventory_quantity
+  from public.products p
+  where p.id = p_product_id
+  for update;
+
+  if not found then
+    raise exception 'Product not found';
+  end if;
+
+  if not coalesce(v_track_inventory, false) then
+    return;
+  end if;
+
+  if p_quantity_delta > 0 and v_inventory_quantity < p_quantity_delta then
+    raise exception 'Not enough inventory available';
+  end if;
+
+  update public.products as p
+  set inventory_quantity = greatest(p.inventory_quantity - p_quantity_delta, 0)
+  where p.id = p_product_id;
+end;
+$$;
+
 -- The browser is NOT allowed to insert orders directly.
 -- Orders are created only through the function below.
 
@@ -541,6 +597,7 @@ drop function if exists public.admin_list_products();
 drop function if exists public.admin_update_product_active(uuid,boolean);
 drop function if exists public.admin_update_product_flags(uuid,boolean,boolean);
 drop function if exists public.admin_update_product_flags(uuid,boolean,boolean,text);
+drop function if exists public.admin_update_product_flags(uuid,boolean,boolean,text,boolean,integer);
 drop function if exists public.admin_get_tax_settings();
 drop function if exists public.admin_save_tax_settings(boolean,text);
 drop function if exists public.admin_list_coupons();
@@ -832,6 +889,8 @@ declare
   v_capacity_units integer;
   v_shippable boolean;
   v_tax_category text;
+  v_track_inventory boolean;
+  v_inventory_quantity integer;
   v_coupon record;
   v_coupon_code text;
   v_coupon_applies_to text;
@@ -918,14 +977,19 @@ begin
   loop
     v_quantity := (v_item->>'quantity')::integer;
 
-    select price_cents, capacity_units, shippable, tax_category
-    into v_price, v_capacity_units, v_shippable, v_tax_category
+    select price_cents, capacity_units, shippable, tax_category, track_inventory, inventory_quantity
+    into v_price, v_capacity_units, v_shippable, v_tax_category, v_track_inventory, v_inventory_quantity
     from products
     where id = (v_item->>'product_id')::uuid
-      and active = true;
+      and active = true
+    for update;
 
     if v_price is null then
       raise exception 'Invalid product';
+    end if;
+
+    if coalesce(v_track_inventory, false) and v_inventory_quantity < v_quantity then
+      raise exception 'Not enough inventory available';
     end if;
 
     v_total := v_total + v_price * v_quantity;
@@ -1025,6 +1089,11 @@ begin
   for v_item in
     select * from jsonb_array_elements(p_items)
   loop
+    perform public.adjust_product_inventory(
+      (v_item->>'product_id')::uuid,
+      (v_item->>'quantity')::integer
+    );
+
     select price_cents
     into v_price
     from products
@@ -1468,6 +1537,18 @@ begin
     raise exception 'Receipt email is required when a receipt is requested';
   end if;
 
+  if v_order.fulfillment_status <> 'canceled' and p_fulfillment_status = 'canceled' then
+    perform public.adjust_product_inventory(oi.product_id, -oi.quantity)
+    from public.order_items oi
+    where oi.order_id = p_order_id
+      and oi.product_id is not null;
+  elsif v_order.fulfillment_status = 'canceled' and p_fulfillment_status <> 'canceled' then
+    perform public.adjust_product_inventory(oi.product_id, oi.quantity)
+    from public.order_items oi
+    where oi.order_id = p_order_id
+      and oi.product_id is not null;
+  end if;
+
   update public.orders as o
   set
     pickup_date_id = p_pickup_date_id,
@@ -1622,6 +1703,23 @@ begin
     raise exception 'Discount cannot be more than the item subtotal';
   end if;
 
+  if v_order.fulfillment_status <> 'canceled' then
+    perform public.adjust_product_inventory(oi.product_id, -oi.quantity)
+    from public.order_items oi
+    where oi.order_id = p_order_id
+      and oi.product_id is not null;
+
+    for v_item in select * from jsonb_array_elements(p_items)
+    loop
+      if nullif(trim(coalesce(v_item->>'product_id', '')), '') is not null then
+        perform public.adjust_product_inventory(
+          (v_item->>'product_id')::uuid,
+          (v_item->>'quantity')::integer
+        );
+      end if;
+    end loop;
+  end if;
+
   select *
   into v_totals
   from public.calculate_order_totals(
@@ -1759,6 +1857,7 @@ declare
   v_discount integer := greatest(coalesce(p_discount_cents, 0), 0);
   v_totals record;
   v_item jsonb;
+  v_product_id uuid;
   v_item_name text;
   v_tax_category text;
   v_quantity integer;
@@ -1807,11 +1906,16 @@ begin
 
   for v_item in select * from jsonb_array_elements(p_items)
   loop
+    v_product_id := null;
     v_item_name := nullif(trim(coalesce(v_item->>'name', '')), '');
     v_tax_category := lower(trim(coalesce(v_item->>'tax_category', 'home_bakery')));
     v_quantity := coalesce((v_item->>'quantity')::integer, 0);
     v_unit_price_cents := coalesce((v_item->>'unit_price_cents')::integer, 0);
     v_item_loaf_spots := greatest(coalesce((v_item->>'loaf_spots')::integer, 0), 0);
+
+    if nullif(trim(coalesce(v_item->>'product_id', '')), '') is not null then
+      v_product_id := (v_item->>'product_id')::uuid;
+    end if;
 
     if v_item_name is null then
       raise exception 'Each item needs a name';
@@ -1898,6 +2002,16 @@ begin
 
   for v_item in select * from jsonb_array_elements(p_items)
   loop
+    v_product_id := null;
+
+    if nullif(trim(coalesce(v_item->>'product_id', '')), '') is not null then
+      v_product_id := (v_item->>'product_id')::uuid;
+    end if;
+
+    if p_fulfillment_status <> 'canceled' and v_product_id is not null then
+      perform public.adjust_product_inventory(v_product_id, (v_item->>'quantity')::integer);
+    end if;
+
     insert into public.order_items (
       order_id,
       product_id,
@@ -1909,10 +2023,14 @@ begin
     )
     values (
       v_order_id,
-      null,
-      trim(v_item->>'name'),
+      v_product_id,
+      case when v_product_id is null then trim(v_item->>'name') else null end,
       lower(trim(coalesce(v_item->>'tax_category', 'home_bakery'))),
-      (greatest(coalesce((v_item->>'loaf_spots')::integer, 0), 0) / greatest((v_item->>'quantity')::integer, 1))::integer,
+      case
+        when v_product_id is null
+          then (greatest(coalesce((v_item->>'loaf_spots')::integer, 0), 0) / greatest((v_item->>'quantity')::integer, 1))::integer
+        else 0
+      end,
       (v_item->>'quantity')::integer,
       (v_item->>'unit_price_cents')::integer
     );
@@ -2019,6 +2137,8 @@ returns table(
   image_url text,
   shippable boolean,
   tax_category text,
+  track_inventory boolean,
+  inventory_quantity integer,
   active boolean,
   sort_order integer
 )
@@ -2044,6 +2164,8 @@ begin
     p.image_url,
     p.shippable,
     p.tax_category,
+    p.track_inventory,
+    p.inventory_quantity,
     p.active,
     p.sort_order
   from public.products p
@@ -2055,9 +2177,18 @@ create or replace function public.admin_update_product_flags(
   p_product_id uuid,
   p_active boolean,
   p_shippable boolean,
-  p_tax_category text default 'home_bakery'
+  p_tax_category text default 'home_bakery',
+  p_track_inventory boolean default false,
+  p_inventory_quantity integer default 0
 )
-returns table(saved_id uuid, saved_active boolean, saved_shippable boolean, saved_tax_category text)
+returns table(
+  saved_id uuid,
+  saved_active boolean,
+  saved_shippable boolean,
+  saved_tax_category text,
+  saved_track_inventory boolean,
+  saved_inventory_quantity integer
+)
 language plpgsql
 security definer
 set search_path = public
@@ -2071,13 +2202,32 @@ begin
     raise exception 'Invalid tax type';
   end if;
 
+  if coalesce(p_inventory_quantity, 0) < 0 then
+    raise exception 'Inventory cannot be negative';
+  end if;
+
   update public.products as p
   set
     active = p_active,
     shippable = p_shippable,
-    tax_category = p_tax_category
+    tax_category = p_tax_category,
+    track_inventory = coalesce(p_track_inventory, false),
+    inventory_quantity = greatest(coalesce(p_inventory_quantity, 0), 0)
   where p.id = p_product_id
-  returning p.id, p.active, p.shippable, p.tax_category into saved_id, saved_active, saved_shippable, saved_tax_category;
+  returning
+    p.id,
+    p.active,
+    p.shippable,
+    p.tax_category,
+    p.track_inventory,
+    p.inventory_quantity
+  into
+    saved_id,
+    saved_active,
+    saved_shippable,
+    saved_tax_category,
+    saved_track_inventory,
+    saved_inventory_quantity;
 
   if saved_id is null then
     raise exception 'Product not found';
@@ -2413,8 +2563,10 @@ grant execute on function public.admin_save_pickup_date(uuid,date,integer,boolea
 revoke all on function public.admin_list_products() from public;
 grant execute on function public.admin_list_products() to authenticated;
 
-revoke all on function public.admin_update_product_flags(uuid,boolean,boolean,text) from public;
-grant execute on function public.admin_update_product_flags(uuid,boolean,boolean,text) to authenticated;
+revoke all on function public.adjust_product_inventory(uuid,integer) from public;
+
+revoke all on function public.admin_update_product_flags(uuid,boolean,boolean,text,boolean,integer) from public;
+grant execute on function public.admin_update_product_flags(uuid,boolean,boolean,text,boolean,integer) to authenticated;
 
 revoke all on function public.admin_get_tax_settings() from public;
 grant execute on function public.admin_get_tax_settings() to authenticated;

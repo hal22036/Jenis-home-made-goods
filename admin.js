@@ -510,6 +510,7 @@ function refreshManualRowTotals(row) {
     <span>Price each: <strong>${money(product.price_cents)}</strong></span>
     <span>Loaf spots: <strong>${rowLoafSpots}</strong> total (${loafSpotsEach} each)</span>
     <span>${taxCategoryLabel(product.tax_category)}</span>
+    ${product.track_inventory ? `<span>Inventory: <strong>${product.inventory_quantity}</strong> in stock</span>` : ""}
   `;
 }
 
@@ -528,6 +529,7 @@ function manualOrderItems() {
         : Number(row.querySelector("[data-manual-item-loaf-spots]").value || 0);
 
       return {
+        product_id: product ? product.id : null,
         name: product
           ? (product.display_group && product.option_label ? `${product.display_group} - ${product.option_label}` : product.name)
           : row.querySelector("[data-manual-item-name]").value.trim(),
@@ -1391,6 +1393,7 @@ function renderProducts() {
                 ${money(product.price_cents)}
                 ${product.capacity_units > 0 ? "- counts toward loaf capacity" : "- add-on item"}
                 ${product.shippable ? "- can ship" : "- pickup only"}
+                ${product.track_inventory ? `- ${product.inventory_quantity} in stock` : "- inventory not tracked"}
                 - ${taxCategoryLabel(product.tax_category)}
               </p>
             </div>
@@ -1402,6 +1405,21 @@ function renderProducts() {
               <label class="inline-check product-active-check">
                 <span>Can ship</span>
                 <input type="checkbox" data-product-shippable ${product.shippable ? "checked" : ""} />
+              </label>
+              <label class="inline-check product-active-check">
+                <span>Track stock</span>
+                <input type="checkbox" data-product-track-inventory ${product.track_inventory ? "checked" : ""} />
+              </label>
+              <label class="product-inventory-field">
+                Inventory
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  data-product-inventory
+                  data-previous-value="${Number(product.inventory_quantity || 0)}"
+                  value="${Number(product.inventory_quantity || 0)}"
+                />
               </label>
               <label>
                 Tax type
@@ -1417,7 +1435,7 @@ function renderProducts() {
     </section>
   `).join("");
 
-  el.productsList.querySelectorAll("[data-product-active], [data-product-shippable], [data-product-tax-category]").forEach(input => {
+  el.productsList.querySelectorAll("[data-product-active], [data-product-shippable], [data-product-track-inventory], [data-product-inventory], [data-product-tax-category]").forEach(input => {
     input.addEventListener("change", saveProductFlags);
   });
 }
@@ -1459,7 +1477,9 @@ function renderProductAdminTabs() {
 async function saveProductFlags(event) {
   const input = event.currentTarget;
   const row = input.closest("[data-product-id]");
-  const previousValue = input.type === "checkbox" ? !input.checked : input.dataset.previousValue;
+  const previousValue = input.type === "checkbox"
+    ? !input.checked
+    : input.dataset.previousValue || input.value;
 
   input.disabled = true;
   setMessage(el.productAdminMessage, "Saving product settings...");
@@ -1468,7 +1488,9 @@ async function saveProductFlags(event) {
     p_product_id: row.dataset.productId,
     p_active: row.querySelector("[data-product-active]").checked,
     p_shippable: row.querySelector("[data-product-shippable]").checked,
-    p_tax_category: row.querySelector("[data-product-tax-category]").value
+    p_tax_category: row.querySelector("[data-product-tax-category]").value,
+    p_track_inventory: row.querySelector("[data-product-track-inventory]").checked,
+    p_inventory_quantity: Number(row.querySelector("[data-product-inventory]").value || 0)
   });
 
   input.disabled = false;
@@ -1477,13 +1499,13 @@ async function saveProductFlags(event) {
     if (input.type === "checkbox") {
       input.checked = previousValue;
     } else {
-      input.value = previousValue || "home_bakery";
+      input.value = previousValue;
     }
     setMessage(el.productAdminMessage, error.message, "error");
     return;
   }
 
-  if (input.tagName === "SELECT") {
+  if (input.tagName === "SELECT" || input.type === "number") {
     input.dataset.previousValue = input.value;
   }
   row.classList.toggle("is-inactive", !row.querySelector("[data-product-active]").checked);

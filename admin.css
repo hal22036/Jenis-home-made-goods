@@ -593,6 +593,20 @@
   margin: 0;
 }
 
+.product-inventory-field {
+  display: grid;
+  min-width: 112px;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.product-inventory-field input {
+  min-height: 38px;
+  padding: 7px 9px;
+}
+
 .status-grid,
 .date-admin-form,
 .coupon-admin-form {

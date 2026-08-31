@@ -9,7 +9,7 @@
 
 const SUPABASE_URL = "https://qvxrbipxxlygmmecgjxf.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_-w4Ef_bqgM_l9bY00thSpg_xohk7e9M";
-const ASSET_VERSION = "20260829-loaf-counter";
+const ASSET_VERSION = "20260831-private-inventory";
 
 const STORE_SETTINGS = {
   bakeryName: "Jeni's Home Made Goods",
@@ -231,6 +231,24 @@ function selectedQuantity() {
 
 function capacityUnitsFor(product) {
   return Number.isInteger(product.capacity_units) ? product.capacity_units : 1;
+}
+
+function productTracksInventory(product) {
+  return product.track_inventory === true ||
+    product.track_inventory === 1 ||
+    String(product.track_inventory).toLowerCase() === "true";
+}
+
+function inventoryQuantityFor(product) {
+  return Math.max(Number(product.inventory_quantity || 0), 0);
+}
+
+function selectedInventoryQuantity(product) {
+  return state.quantities[product.id] || 0;
+}
+
+function productHasInventory(product) {
+  return !productTracksInventory(product) || inventoryQuantityFor(product) > 0;
 }
 
 function selectedCapacityUnits() {
@@ -818,7 +836,7 @@ function renderProducts() {
     return;
   }
 
-  const visibleProducts = productsForActiveTab();
+  const visibleProducts = productsForActiveTab().filter(productHasInventory);
 
   if (!visibleProducts.length) {
     el.productList.innerHTML = "<p class=\"muted\">No active items are listed in this section yet.</p>";
@@ -998,6 +1016,7 @@ function renderProductCard(products) {
 
 function isQuantityButtonDisabled(action, product) {
   if (action === "minus") return state.quantities[product.id] === 0;
+  if (productTracksInventory(product) && selectedInventoryQuantity(product) >= inventoryQuantityFor(product)) return true;
 
   return (
     capacityUnitsFor(product) > 0 &&
@@ -1019,6 +1038,11 @@ function updateProductQuantity(action, product) {
   } else {
     const remaining = remainingForSelectedDate();
     const productCapacity = capacityUnitsFor(product);
+
+    if (productTracksInventory(product) && selectedInventoryQuantity(product) >= inventoryQuantityFor(product)) {
+      setMessage(`${displayNameFor(product)} is sold out.`, "error");
+      return;
+    }
 
     if (
       productCapacity > 0 &&
@@ -1311,7 +1335,9 @@ async function submitReviewedOrder() {
 
     const message = error.message.includes("Not enough capacity")
       ? "That pickup date filled up while you were ordering. Please choose another date or reduce your quantity."
-      : "Your order could not be submitted. Please check your details and try again.";
+      : error.message.includes("Not enough inventory")
+        ? "One of those items just sold out. Please review your quantities and try again."
+        : "Your order could not be submitted. Please check your details and try again.";
 
     setReviewMessage(message, "error");
     await refreshSelectedDate();

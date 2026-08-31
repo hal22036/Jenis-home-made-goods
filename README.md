@@ -138,6 +138,14 @@ Use `capacity_units` to decide whether a product counts against pickup capacity:
 - Bread loaves: `1`
 - Add-ons or non-loaf products: `0`
 
+Use `track_inventory` and `inventory_quantity` when you have a set number of items available:
+
+- Set `track_inventory` to `true` for limited-stock items like bath bombs, sugar scrubs, or seasonal add-ons.
+- Put the number available in `inventory_quantity`.
+- Leave `track_inventory` as `false` for bread loaves, because those are controlled by the 14-loaf pickup-date capacity instead.
+
+The storefront hides sold-out tracked items. When a tracked item is ordered, canceled, reactivated, or edited from the admin page, the inventory count updates automatically.
+
 Use `category` to group the order screen. Built-in category order:
 
 - `Everyday`
