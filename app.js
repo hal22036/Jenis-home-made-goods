@@ -9,7 +9,7 @@
 
 const SUPABASE_URL = "https://qvxrbipxxlygmmecgjxf.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_-w4Ef_bqgM_l9bY00thSpg_xohk7e9M";
-const ASSET_VERSION = "20260831-private-inventory";
+const ASSET_VERSION = "20260831-loaf-counter-tabs";
 
 const STORE_SETTINGS = {
   bakeryName: "Jeni's Home Made Goods",
@@ -797,10 +797,7 @@ function renderDates() {
     btn.className = "date-button";
     btn.disabled = remaining <= 0;
     btn.setAttribute("aria-pressed", state.selectedDate?.id === date.id ? "true" : "false");
-    btn.innerHTML = `
-      <strong>${prettyDate(date.pickup_date)}</strong>
-      <span>${remaining > 0 ? `${remaining} loaf spot${remaining === 1 ? "" : "s"} left` : "Sold out"}</span>
-    `;
+    btn.innerHTML = `<strong>${prettyDate(date.pickup_date)}</strong>`;
     btn.addEventListener("click", () => selectDate(date.id));
     el.dateList.appendChild(btn);
   });
@@ -1071,8 +1068,7 @@ function updateSummary() {
   const count = selectedCapacityUnits();
   const showLoafCounter = state.activeProductTab === "baked-goods";
 
-  el.capacityMessage.textContent =
-    `${remaining} of ${state.selectedDate.capacity} loaf spots are currently available for ${prettyDate(state.selectedDate.pickup_date)}.`;
+  el.capacityMessage.textContent = "";
 
   el.capacityPill.hidden = !showLoafCounter;
   el.selectedCount.textContent =

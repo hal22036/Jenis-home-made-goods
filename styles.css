@@ -413,6 +413,10 @@ h2 {
   font-weight: 800;
 }
 
+.capacity-pill[hidden] {
+  display: none;
+}
+
 .summary {
   margin-top: 20px;
   padding-top: 18px;
