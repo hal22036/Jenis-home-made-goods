@@ -9,7 +9,7 @@
 
 const SUPABASE_URL = "https://qvxrbipxxlygmmecgjxf.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_-w4Ef_bqgM_l9bY00thSpg_xohk7e9M";
-const ASSET_VERSION = "20260831-bath-bomb-promo-lines";
+const ASSET_VERSION = "20260901-image-viewer";
 
 const STORE_SETTINGS = {
   bakeryName: "Jeni's Home Made Goods",
@@ -129,6 +129,10 @@ const el = {
   successSection: document.querySelector("#success-section"),
   successContent: document.querySelector("#success-content"),
   copyMessage: document.querySelector("#copy-message"),
+  imageViewer: document.querySelector("#image-viewer"),
+  imageViewerImage: document.querySelector("#image-viewer-image"),
+  imageViewerCaption: document.querySelector("#image-viewer-caption"),
+  imageViewerClose: document.querySelector("#image-viewer-close"),
   paymentChoices: document.querySelector("#payment-choices")
 };
 
@@ -472,14 +476,42 @@ function productImageMarkup(products, altText) {
   if (!imageUrl) return "";
 
   return `
-    <img
-      class="product-image"
-      src="${escapeAttribute(imageUrl)}"
-      alt="${escapeAttribute(altText)}"
-      loading="lazy"
-      onerror="this.hidden=true"
-    />
+    <button
+      class="product-image-button"
+      type="button"
+      data-image-viewer-src="${escapeAttribute(imageUrl)}"
+      data-image-viewer-alt="${escapeAttribute(altText)}"
+      aria-label="View larger image of ${escapeAttribute(altText)}"
+    >
+      <img
+        class="product-image"
+        src="${escapeAttribute(imageUrl)}"
+        alt="${escapeAttribute(altText)}"
+        loading="lazy"
+        onerror="this.closest('.product-image-button').hidden=true"
+      />
+    </button>
   `;
+}
+
+function openImageViewer(src, altText) {
+  if (!el.imageViewer || !el.imageViewerImage) return;
+
+  el.imageViewerImage.src = src;
+  el.imageViewerImage.alt = altText;
+  if (el.imageViewerCaption) el.imageViewerCaption.textContent = altText;
+  el.imageViewer.hidden = false;
+  document.body.classList.add("image-viewer-open");
+  el.imageViewerClose?.focus();
+}
+
+function closeImageViewer() {
+  if (!el.imageViewer || !el.imageViewerImage) return;
+
+  el.imageViewer.hidden = true;
+  el.imageViewerImage.removeAttribute("src");
+  el.imageViewerImage.alt = "";
+  document.body.classList.remove("image-viewer-open");
 }
 
 function invoiceItemImageMarkup(item) {
@@ -1041,6 +1073,12 @@ function renderProductCard(products) {
     button.addEventListener("click", () => updateProductQuantity(button.dataset.action, product));
   });
 
+  card.querySelectorAll("[data-image-viewer-src]").forEach(button => {
+    button.addEventListener("click", () => {
+      openImageViewer(button.dataset.imageViewerSrc, button.dataset.imageViewerAlt || "Product image");
+    });
+  });
+
   return card;
 }
 
@@ -1127,6 +1165,20 @@ el.removeCoupon.addEventListener("click", () => {
   updateSummary();
   if (!el.reviewSection.hidden) {
     showReview();
+  }
+});
+
+el.imageViewerClose?.addEventListener("click", closeImageViewer);
+
+el.imageViewer?.addEventListener("click", event => {
+  if (event.target === el.imageViewer) {
+    closeImageViewer();
+  }
+});
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && el.imageViewer && !el.imageViewer.hidden) {
+    closeImageViewer();
   }
 });
 

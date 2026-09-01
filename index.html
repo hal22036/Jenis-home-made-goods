@@ -9,7 +9,7 @@
   />
   <title>Jeni's Home Made Goods Orders</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-  <link rel="stylesheet" href="styles.css?v=20260831-bath-bomb-promo-lines" />
+  <link rel="stylesheet" href="styles.css?v=20260901-image-viewer" />
 </head>
 <body>
   <header class="site-header">
@@ -204,7 +204,17 @@
     </section>
   </main>
 
+  <div class="image-viewer" id="image-viewer" hidden>
+    <div class="image-viewer-panel" role="dialog" aria-modal="true" aria-labelledby="image-viewer-caption">
+      <button class="image-viewer-close" id="image-viewer-close" type="button" aria-label="Close enlarged image">
+        Close
+      </button>
+      <img id="image-viewer-image" alt="" />
+      <p id="image-viewer-caption"></p>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=20260831-bath-bomb-promo-lines"></script>
+  <script src="app.js?v=20260901-image-viewer"></script>
 </body>
 </html>
