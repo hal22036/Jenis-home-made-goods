@@ -274,6 +274,21 @@ function bathBombBundleDiscountCents() {
   return Math.floor(bathBombQuantity() / 4) * 200;
 }
 
+function isBathBombGroup(groupName) {
+  return cleanText(groupName).toLowerCase() === "bath bombs";
+}
+
+function bathBombPromoMarkup(groupName) {
+  if (!isBathBombGroup(groupName)) return "";
+
+  return `
+    <div class="product-promo-banner">
+      <strong>$5 each</strong>
+      <span>or mix and match 4 for $18</span>
+    </div>
+  `;
+}
+
 function discountCents() {
   return state.coupon?.discount_cents || 0;
 }
@@ -988,6 +1003,7 @@ function renderProductCard(products) {
           <strong>${money(cardSubtotalCents(sortedProducts))}</strong>
         </div>
       </div>
+      ${bathBombPromoMarkup(groupName || primaryProduct.name)}
       <div class="option-table">
         <div class="option-table-head">
           <span>Option</span>

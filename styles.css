@@ -277,6 +277,27 @@ h2 {
   color: var(--muted);
 }
 
+.product-promo-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 4px;
+  padding: 10px 12px;
+  border: 1px solid #dfb957;
+  border-radius: 8px;
+  background: #fff3b0;
+  color: #24180f;
+}
+
+.product-promo-banner strong {
+  font-size: 1.05rem;
+}
+
+.product-promo-banner span {
+  font-weight: 800;
+}
+
 .item-subtotal {
   display: block;
   margin-top: 4px;
