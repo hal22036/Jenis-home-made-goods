@@ -458,6 +458,29 @@ function productById(productId) {
   return state.products.find(product => product.id === productId);
 }
 
+function isBathBombProduct(product) {
+  return String(product?.display_group || "").trim().toLowerCase() === "bath bombs";
+}
+
+function isBathBombItem(item) {
+  return String(item?.display_group || "").trim().toLowerCase() === "bath bombs";
+}
+
+function bathBombBundleDiscountCents(items) {
+  const bathBombQuantity = items.reduce((sum, item) => {
+    const product = productById(item.product_id);
+    return isBathBombProduct(product) || isBathBombItem(item)
+      ? sum + Number(item.quantity || 0)
+      : sum;
+  }, 0);
+
+  return Math.floor(bathBombQuantity / 4) * 200;
+}
+
+function manualDiscountForOrder(order) {
+  return Math.max(Number(order.discount_cents || 0) - bathBombBundleDiscountCents(order.items || []), 0);
+}
+
 function syncManualItemRow(row) {
   const productSelect = row.querySelector("[data-manual-product-select]");
   const customField = row.querySelector(".manual-custom-name-field");
@@ -547,7 +570,7 @@ function updateManualOrderSubtotal() {
   el.manualItemsList.querySelectorAll(".manual-item-row").forEach(refreshManualRowTotals);
   const items = manualOrderItems();
   const subtotal = items.reduce((sum, item) => sum + (Number(item.quantity || 0) * Number(item.unit_price_cents || 0)), 0);
-  const discount = Math.min(dollarsToCents(el.manualDiscount.value), subtotal);
+  const discount = Math.min(dollarsToCents(el.manualDiscount.value) + bathBombBundleDiscountCents(items), subtotal);
   const loafSpots = items.reduce((sum, item) => sum + Number(item.loaf_spots || 0), 0);
   el.manualOrderSubtotal.textContent = money(subtotal);
   el.manualOrderDiscount.textContent = `-${money(discount)}`;
@@ -858,7 +881,7 @@ function orderCardMarkup(order) {
         <div><dt>Method</dt><dd>${fulfillmentLabel(order.fulfillment_method)}</dd></div>
         <div><dt>Receipt email</dt><dd>${invoiceStatusLabel(order)}</dd></div>
         <div><dt>Loaf spots</dt><dd>${order.total_loaves}</dd></div>
-        ${order.discount_cents ? `<div><dt>Discount</dt><dd>${order.coupon_code ? `${order.coupon_code} (${couponAppliesToLabel(order.coupon_applies_to)}) ` : ""}-${money(order.discount_cents)}</dd></div>` : ""}
+        ${order.discount_cents ? `<div><dt>Discount</dt><dd>${order.coupon_code ? `Discounts, including coupon ${order.coupon_code} (${couponAppliesToLabel(order.coupon_applies_to)}) ` : ""}-${money(order.discount_cents)}</dd></div>` : ""}
         ${order.tip_cents ? `<div><dt>Tip</dt><dd>${money(order.tip_cents)}</dd></div>` : ""}
         <div><dt>Tax</dt><dd>${money(order.tax_cents || 0)}</dd></div>
         ${order.shipping_cents ? `<div><dt>Shipping</dt><dd>${money(order.shipping_cents)}</dd></div>` : ""}
@@ -891,7 +914,7 @@ function orderCardMarkup(order) {
         <div class="order-adjustments-grid">
           <label>
             Discount
-            <input data-order-discount type="number" min="0" step="0.01" value="${centsToDollars(order.discount_cents || 0)}" />
+            <input data-order-discount type="number" min="0" step="0.01" value="${centsToDollars(manualDiscountForOrder(order))}" />
           </label>
           <label>
             Tip
@@ -1106,7 +1129,7 @@ function updateOrderItemsPreview(event) {
   const card = editor.closest("[data-order-id]");
   const items = orderItemsFromCard(card);
   const subtotal = items.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.unit_price_cents || 0), 0);
-  const discount = Math.min(dollarsToCents(card.querySelector("[data-order-discount]").value), subtotal);
+  const discount = Math.min(dollarsToCents(card.querySelector("[data-order-discount]").value) + bathBombBundleDiscountCents(items), subtotal);
   const tip = dollarsToCents(card.querySelector("[data-order-tip]").value);
   editor.querySelector("[data-order-items-preview]").textContent = money(Math.max(subtotal - discount, 0) + tip);
 }

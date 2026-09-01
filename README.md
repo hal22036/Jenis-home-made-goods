@@ -168,6 +168,8 @@ Each option is still its own product row, so it can have its own price. The stor
 
 For the most predictable setup, fill in `display_group` and `option_label`. The storefront can also infer simple groups from names like `Granola - Plain` or `Honey Butter 2 oz`, but the columns are easier to maintain.
 
+Bath bombs have built-in bundle pricing: `$5.00` each, or every set of 4 for `$18.00`. Add each scent as its own product row with `display_group` set to `Bath Bombs`, `option_label` set to the scent, `price_cents` set to `500`, `category` set to `Bath & Body`, `capacity_units` set to `0`, `tax_category` set to `general_product`, and inventory tracking turned on.
+
 ## 5. Add Pickup Dates
 
 Open Table Editor -> `pickup_dates`.

@@ -9,7 +9,7 @@
 
 const SUPABASE_URL = "https://qvxrbipxxlygmmecgjxf.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_-w4Ef_bqgM_l9bY00thSpg_xohk7e9M";
-const ASSET_VERSION = "20260831-loaf-counter-tabs";
+const ASSET_VERSION = "20260831-bath-bomb-bundle";
 
 const STORE_SETTINGS = {
   bakeryName: "Jeni's Home Made Goods",
@@ -263,17 +263,32 @@ function selectedTotalCents() {
   }, 0);
 }
 
+function bathBombQuantity() {
+  return state.products.reduce((sum, product) => {
+    if (cleanText(product.display_group).toLowerCase() !== "bath bombs") return sum;
+    return sum + (state.quantities[product.id] || 0);
+  }, 0);
+}
+
+function bathBombBundleDiscountCents() {
+  return Math.floor(bathBombQuantity() / 4) * 200;
+}
+
 function discountCents() {
   return state.coupon?.discount_cents || 0;
 }
 
+function totalDiscountCents() {
+  return discountCents() + bathBombBundleDiscountCents();
+}
+
 function finalTotalCents() {
   if (state.orderTotals) return state.orderTotals.final_total_cents;
-  return Math.max(selectedTotalCents() - discountCents(), 0);
+  return Math.max(selectedTotalCents() - totalDiscountCents(), 0);
 }
 
 function discountedSubtotalCents() {
-  return Math.max(selectedTotalCents() - discountCents(), 0);
+  return Math.max(selectedTotalCents() - totalDiscountCents(), 0);
 }
 
 function selectedSubtotalByTaxCategory(taxCategory) {
@@ -663,8 +678,8 @@ async function calculateOrderTotals() {
     p_subtotal_cents: selectedTotalCents(),
     p_home_bakery_subtotal_cents: selectedSubtotalByTaxCategory("home_bakery"),
     p_general_product_subtotal_cents: selectedSubtotalByTaxCategory("general_product"),
-    p_discount_cents: discountCents(),
-    p_coupon_applies_to: state.coupon?.applies_to || null,
+    p_discount_cents: totalDiscountCents(),
+    p_coupon_applies_to: bathBombBundleDiscountCents() ? "items" : state.coupon?.applies_to || null,
     p_shipping_method: fulfillmentMethod(),
     p_tax_state: shippingIsSelected() ? cleanText(el.shippingState.value).toUpperCase() : null
   });
@@ -678,7 +693,7 @@ async function calculateOrderTotals() {
 
 async function applyCouponCode() {
   const code = cleanText(el.couponCode.value).toUpperCase();
-  const subtotal = selectedTotalCents();
+  const subtotal = Math.max(selectedTotalCents() - bathBombBundleDiscountCents(), 0);
 
   if (!code) {
     resetCoupon();
@@ -1234,6 +1249,12 @@ async function showReview() {
     <div class="summary">
       <div class="total-lines">
         <div><span>Subtotal</span><span>${money(selectedTotalCents())}</span></div>
+        ${bathBombBundleDiscountCents() ? `
+          <div class="discount-line">
+            <span>Bath bomb deal</span>
+            <span>-${money(bathBombBundleDiscountCents())}</span>
+          </div>
+        ` : ""}
         ${state.coupon ? `
           <div class="discount-line">
             <span>Coupon ${state.coupon.code} (${couponAppliesToLabel(state.coupon.applies_to)})</span>
@@ -1441,6 +1462,7 @@ function showSuccess(result, paymentMethod, invoiceRequested, items, details, co
     <div class="summary">
       <div class="total-lines">
         <div><span>Subtotal</span><span>${money(selectedTotalCents())}</span></div>
+        ${bathBombBundleDiscountCents() ? `<div class="discount-line"><span>Bath bomb deal</span><span>-${money(bathBombBundleDiscountCents())}</span></div>` : ""}
         ${coupon ? `<div class="discount-line"><span>Coupon ${coupon.code} (${couponAppliesToLabel(coupon.applies_to)})</span><span>-${money(coupon.discount_cents)}</span></div>` : ""}
         <div><span>Tax</span><span>${money(totals?.tax_cents || 0)}</span></div>
         ${totals?.shipping_cents ? `<div><span>Shipping</span><span>${money(totals.shipping_cents)}</span></div>` : ""}

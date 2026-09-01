@@ -170,7 +170,7 @@ function renderInvoice(order) {
         <div><span>Subtotal</span><span>${money(order.subtotal_cents || order.total_cents)}</span></div>
         ${order.discount_cents ? `
           <div class="discount-line">
-            <span>${order.coupon_code ? `Coupon ${escapeHtml(order.coupon_code)} (${couponAppliesToLabel(order.coupon_applies_to)})` : "Discount"}</span>
+            <span>${order.coupon_code ? `Discounts, including coupon ${escapeHtml(order.coupon_code)} (${couponAppliesToLabel(order.coupon_applies_to)})` : "Discount"}</span>
             <span>-${money(order.discount_cents)}</span>
           </div>
         ` : ""}

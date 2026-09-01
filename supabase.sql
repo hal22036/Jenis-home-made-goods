@@ -855,6 +855,26 @@ as $$
   );
 $$;
 
+create or replace function public.bath_bomb_bundle_discount(
+  p_items jsonb
+)
+returns integer
+language sql
+security definer
+set search_path = public
+as $$
+  with bath_bomb_items as (
+    select coalesce((item->>'quantity')::integer, 0) as quantity
+    from jsonb_array_elements(coalesce(p_items, '[]'::jsonb)) item
+    join public.products p
+      on p.id = (item->>'product_id')::uuid
+    where lower(trim(coalesce(p.display_group, ''))) = 'bath bombs'
+      and coalesce((item->>'quantity'), '') ~ '^[0-9]+$'
+  )
+  select (coalesce(sum(quantity), 0)::integer / 4) * 200
+  from bath_bomb_items;
+$$;
+
 create or replace function public.place_order(
   p_pickup_date_id uuid,
   p_customer_name text,
@@ -895,6 +915,7 @@ declare
   v_coupon_code text;
   v_coupon_applies_to text;
   v_discount integer;
+  v_bundle_discount integer;
   v_totals record;
   v_fulfillment_method text;
   v_shipping_address text;
@@ -1012,18 +1033,27 @@ begin
 
   v_coupon_code := upper(trim(coalesce(p_coupon_code, '')));
   v_coupon_applies_to := null;
-  v_discount := 0;
+  v_bundle_discount := public.bath_bomb_bundle_discount(p_items);
+  v_discount := v_bundle_discount;
 
   if v_coupon_code <> '' then
     select *
     into v_coupon
-    from public.validate_coupon_code(v_coupon_code, v_total, v_fulfillment_method);
+    from public.validate_coupon_code(
+      v_coupon_code,
+      greatest(v_total - v_bundle_discount, 0),
+      v_fulfillment_method
+    );
 
     v_coupon_code := v_coupon.code;
     v_coupon_applies_to := v_coupon.applies_to;
-    v_discount := v_coupon.discount_cents;
+    v_discount := v_bundle_discount + v_coupon.discount_cents;
   else
     v_coupon_code := null;
+  end if;
+
+  if v_bundle_discount > 0 then
+    v_coupon_applies_to := 'items';
   end if;
 
   select *
@@ -1599,6 +1629,7 @@ declare
   v_general_product_subtotal integer := 0;
   v_total_loaves integer := 0;
   v_discount integer := greatest(coalesce(p_discount_cents, 0), 0);
+  v_bundle_discount integer := 0;
   v_tip integer := greatest(coalesce(p_tip_cents, 0), 0);
   v_totals record;
   v_item jsonb;
@@ -1698,6 +1729,9 @@ begin
       raise exception 'This pickup date only has % loaf spots left', greatest(v_capacity - v_existing_loaves, 0);
     end if;
   end if;
+
+  v_bundle_discount := public.bath_bomb_bundle_discount(p_items);
+  v_discount := v_discount + v_bundle_discount;
 
   if v_discount > v_subtotal then
     raise exception 'Discount cannot be more than the item subtotal';
@@ -1855,6 +1889,7 @@ declare
   v_home_bakery_subtotal integer := 0;
   v_general_product_subtotal integer := 0;
   v_discount integer := greatest(coalesce(p_discount_cents, 0), 0);
+  v_bundle_discount integer := 0;
   v_totals record;
   v_item jsonb;
   v_product_id uuid;
@@ -1950,6 +1985,9 @@ begin
     and v_existing_loaves + v_total_loaves > v_capacity then
     raise exception 'This pickup date only has % loaf spots left', greatest(v_capacity - v_existing_loaves, 0);
   end if;
+
+  v_bundle_discount := public.bath_bomb_bundle_discount(p_items);
+  v_discount := v_discount + v_bundle_discount;
 
   if v_discount > v_subtotal then
     raise exception 'Discount cannot be more than the subtotal';
@@ -2520,6 +2558,9 @@ grant execute on function public.calculate_order_totals(integer,integer,text,tex
 
 revoke all on function public.calculate_order_totals(integer,integer,integer,integer,text,text,text) from public;
 grant execute on function public.calculate_order_totals(integer,integer,integer,integer,text,text,text) to anon, authenticated;
+
+revoke all on function public.bath_bomb_bundle_discount(jsonb) from public;
+grant execute on function public.bath_bomb_bundle_discount(jsonb) to anon, authenticated;
 
 revoke all on function public.generate_order_code() from public;
 grant execute on function public.generate_order_code() to anon, authenticated;
