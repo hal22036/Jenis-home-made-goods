@@ -199,7 +199,8 @@ function upsertOrdersToSheet(ordersSheet, websiteOrders, existingRows) {
       statusLabel(order.fulfillment_status),
       invoiceStatusLabel(order),
       order.archived ? "Yes" : "No",
-      new Date()
+      new Date(),
+      taxCents ? centsToDollars(taxCents) : ""
     ];
 
     rowsToWrite.push({ row: orderRowNumber, values: orderRow });
@@ -562,7 +563,7 @@ function discountLabel(order) {
 
 function ensureWebsiteSyncColumns(sheet) {
   const headers = [
-    ["Website Order Code", "Payment Status", "Fulfillment Status", "Invoice Status", "Archived", "Last Website Sync"]
+    ["Website Order Code", "Payment Status", "Fulfillment Status", "Invoice Status", "Archived", "Last Website Sync", "Tax Collected"]
   ];
 
   sheet.getRange(1, 11, 1, headers[0].length).setValues(headers);
