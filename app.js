@@ -9,7 +9,7 @@
 
 const SUPABASE_URL = "https://qvxrbipxxlygmmecgjxf.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_-w4Ef_bqgM_l9bY00thSpg_xohk7e9M";
-const ASSET_VERSION = "20260831-option-header";
+const ASSET_VERSION = "20260831-bath-bomb-promo-lines";
 
 const STORE_SETTINGS = {
   bakeryName: "Jeni's Home Made Goods",
@@ -283,8 +283,8 @@ function bathBombPromoMarkup(groupName) {
 
   return `
     <div class="product-promo-banner">
-      <strong>$5 each</strong>
-      <span>or mix and match 4 for $18. Discount reflects at checkout.</span>
+      <strong>$5 each or mix and match 4 for $18.</strong>
+      <span>Discount reflects at checkout.</span>
     </div>
   `;
 }

@@ -278,10 +278,8 @@ h2 {
 }
 
 .product-promo-banner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
+  display: grid;
+  gap: 4px;
   margin: 12px 0 4px;
   padding: 10px 12px;
   border: 1px solid #dfb957;
@@ -295,6 +293,7 @@ h2 {
 }
 
 .product-promo-banner span {
+  font-size: 0.92rem;
   font-weight: 800;
 }
 
