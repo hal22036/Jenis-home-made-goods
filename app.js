@@ -9,7 +9,7 @@
 
 const SUPABASE_URL = "https://qvxrbipxxlygmmecgjxf.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_-w4Ef_bqgM_l9bY00thSpg_xohk7e9M";
-const ASSET_VERSION = "20260901-photo-refresh";
+const ASSET_VERSION = "20260901-granola-refresh";
 
 const STORE_SETTINGS = {
   bakeryName: "Jeni's Home Made Goods",
