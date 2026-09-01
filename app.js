@@ -284,7 +284,7 @@ function bathBombPromoMarkup(groupName) {
   return `
     <div class="product-promo-banner">
       <strong>$5 each</strong>
-      <span>or mix and match 4 for $18</span>
+      <span>or mix and match 4 for $18. Discount reflects at checkout.</span>
     </div>
   `;
 }
