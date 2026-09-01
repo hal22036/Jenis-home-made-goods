@@ -9,7 +9,7 @@
 
 const SUPABASE_URL = "https://qvxrbipxxlygmmecgjxf.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_-w4Ef_bqgM_l9bY00thSpg_xohk7e9M";
-const ASSET_VERSION = "20260831-bath-bomb-bundle";
+const ASSET_VERSION = "20260831-option-header";
 
 const STORE_SETTINGS = {
   bakeryName: "Jeni's Home Made Goods",
@@ -1007,9 +1007,11 @@ function renderProductCard(products) {
       <div class="option-table">
         <div class="option-table-head">
           <span>Option</span>
-          <span>Quantity</span>
-          <span>Price</span>
-          <span>Subtotal</span>
+          <div class="option-controls option-table-labels">
+            <span>Quantity</span>
+            <span>Price</span>
+            <span>Subtotal</span>
+          </div>
         </div>
         ${sortedProducts.map(product => `
           <div class="option-row">
