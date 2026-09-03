@@ -59,6 +59,9 @@ const el = {
   clearOrderFilters: document.querySelector("#clear-order-filters"),
   manualOrderForm: document.querySelector("#manual-order-form"),
   manualPickupDate: document.querySelector("#manual-pickup-date"),
+  manualUseSpecialDate: document.querySelector("#manual-use-special-date"),
+  manualSpecialDateField: document.querySelector("#manual-special-date-field"),
+  manualSpecialPickupDate: document.querySelector("#manual-special-pickup-date"),
   manualCustomerName: document.querySelector("#manual-customer-name"),
   manualCustomerPhone: document.querySelector("#manual-customer-phone"),
   manualCustomerEmail: document.querySelector("#manual-customer-email"),
@@ -297,6 +300,7 @@ el.clearOrderFilters.addEventListener("click", () => {
   renderOrders();
 });
 el.addManualItem.addEventListener("click", () => addManualItemRow());
+el.manualUseSpecialDate.addEventListener("change", syncManualSpecialDateFields);
 el.manualItemsList.addEventListener("input", updateManualOrderSubtotal);
 el.manualDiscount.addEventListener("input", updateManualOrderSubtotal);
 el.manualItemsList.addEventListener("change", event => {
@@ -372,6 +376,23 @@ function renderManualOrderDateOptions() {
 
   if (!el.manualItemsList.querySelector(".manual-item-row")) {
     addManualItemRow();
+  }
+
+  syncManualSpecialDateFields();
+}
+
+function syncManualSpecialDateFields() {
+  const useSpecialDate = el.manualUseSpecialDate.checked;
+
+  el.manualSpecialDateField.hidden = !useSpecialDate;
+  el.manualSpecialPickupDate.required = useSpecialDate;
+  el.manualPickupDate.required = !useSpecialDate;
+  el.manualPickupDate.disabled = useSpecialDate;
+
+  if (useSpecialDate) {
+    el.manualPickupDate.value = "";
+  } else {
+    el.manualSpecialPickupDate.value = "";
   }
 }
 
@@ -580,8 +601,13 @@ function updateManualOrderSubtotal() {
 
 function clearManualOrderForm() {
   const selectedDate = el.manualPickupDate.value;
+  const useSpecialDate = el.manualUseSpecialDate.checked;
+  const specialDate = el.manualSpecialPickupDate.value;
   el.manualOrderForm.reset();
   el.manualPickupDate.value = selectedDate;
+  el.manualUseSpecialDate.checked = useSpecialDate;
+  el.manualSpecialPickupDate.value = specialDate;
+  syncManualSpecialDateFields();
   el.manualItemsList.innerHTML = "";
   addManualItemRow();
   updateManualOrderSubtotal();
@@ -608,12 +634,25 @@ async function saveManualOrder(event) {
     return;
   }
 
+  if (el.manualUseSpecialDate.checked && !el.manualSpecialPickupDate.value) {
+    setMessage(el.manualOrderMessage, "Choose the special order date.", "error");
+    el.manualSpecialPickupDate.focus();
+    return;
+  }
+
+  if (!el.manualUseSpecialDate.checked && !el.manualPickupDate.value) {
+    setMessage(el.manualOrderMessage, "Choose an order date.", "error");
+    el.manualPickupDate.focus();
+    return;
+  }
+
   const submitButton = el.manualOrderForm.querySelector("button[type='submit']");
   submitButton.disabled = true;
   setMessage(el.manualOrderMessage, "Saving in-person order...");
 
   const { data, error } = await supabaseClient.rpc("admin_create_manual_order", {
-    p_pickup_date_id: el.manualPickupDate.value,
+    p_pickup_date_id: el.manualUseSpecialDate.checked ? null : el.manualPickupDate.value,
+    p_special_pickup_date: el.manualUseSpecialDate.checked ? el.manualSpecialPickupDate.value : null,
     p_customer_name: el.manualCustomerName.value.trim(),
     p_customer_email: el.manualCustomerEmail.value.trim() || null,
     p_customer_phone: el.manualCustomerPhone.value.trim(),

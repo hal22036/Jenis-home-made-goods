@@ -189,6 +189,8 @@ The SQL setup file does not auto-create pickup dates, so rerunning it will not a
 
 Orders automatically close at 5 PM on the Wednesday before each pickup date. For a Friday pickup, customers can order until Wednesday at 4:59 PM; at 5:00 PM the date will no longer appear.
 
+For in-person special orders, use Admin -> Orders -> Add in-person order -> Special date. Special dates are saved as closed pickup dates so they can hold admin orders without appearing on the public website.
+
 ## 6. Deploy on GitHub Pages
 
 1. Create a GitHub repository.

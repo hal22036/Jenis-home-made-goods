@@ -591,6 +591,7 @@ drop function if exists public.admin_update_order_items(uuid,integer,integer,jso
 drop function if exists public.admin_archive_orders_for_pickup_date(date);
 drop function if exists public.admin_create_manual_order(uuid,text,text,text,text,text,text,text,integer,jsonb);
 drop function if exists public.admin_create_manual_order(uuid,text,text,text,text,text,text,text,integer,integer,jsonb);
+drop function if exists public.admin_create_manual_order(uuid,date,text,text,text,text,text,text,text,integer,integer,jsonb);
 drop function if exists public.admin_list_pickup_dates();
 drop function if exists public.admin_save_pickup_date(uuid,date,integer,boolean);
 drop function if exists public.admin_list_products();
@@ -1862,6 +1863,7 @@ $$;
 
 create or replace function public.admin_create_manual_order(
   p_pickup_date_id uuid,
+  p_special_pickup_date date,
   p_customer_name text,
   p_customer_email text,
   p_customer_phone text,
@@ -1881,6 +1883,7 @@ as $$
 declare
   v_order_id uuid;
   v_order_code text;
+  v_pickup_date_id uuid;
   v_capacity integer;
   v_existing_loaves integer;
   v_total_loaves integer := greatest(coalesce(p_total_loaves, 0), 0);
@@ -1923,10 +1926,29 @@ begin
     raise exception 'Add at least one order item';
   end if;
 
+  if p_pickup_date_id is null and p_special_pickup_date is null then
+    raise exception 'Order date is required';
+  end if;
+
+  if p_pickup_date_id is not null and p_special_pickup_date is not null then
+    raise exception 'Choose an existing order date or a special date, not both';
+  end if;
+
+  if p_special_pickup_date is not null then
+    insert into public.pickup_dates (pickup_date, capacity, is_open)
+    values (p_special_pickup_date, greatest(14, v_total_loaves), false)
+    on conflict on constraint pickup_dates_pickup_date_key
+    do update set
+      capacity = greatest(public.pickup_dates.capacity, excluded.capacity)
+    returning id into v_pickup_date_id;
+  else
+    v_pickup_date_id := p_pickup_date_id;
+  end if;
+
   select capacity
   into v_capacity
   from public.pickup_dates
-  where id = p_pickup_date_id
+  where id = v_pickup_date_id
   for update;
 
   if v_capacity is null then
@@ -1936,7 +1958,7 @@ begin
   select coalesce(sum(o.total_loaves), 0)
   into v_existing_loaves
   from public.orders o
-  where o.pickup_date_id = p_pickup_date_id
+  where o.pickup_date_id = v_pickup_date_id
     and o.fulfillment_status <> 'canceled';
 
   for v_item in select * from jsonb_array_elements(p_items)
@@ -2017,7 +2039,7 @@ begin
     invoice_sent
   )
   values (
-    p_pickup_date_id,
+    v_pickup_date_id,
     trim(p_customer_name),
     nullif(trim(coalesce(p_customer_email, '')), ''),
     trim(coalesce(p_customer_phone, '')),
@@ -2592,8 +2614,8 @@ grant execute on function public.admin_update_order_items(uuid,integer,integer,j
 revoke all on function public.admin_archive_orders_for_pickup_date(date) from public;
 grant execute on function public.admin_archive_orders_for_pickup_date(date) to authenticated;
 
-revoke all on function public.admin_create_manual_order(uuid,text,text,text,text,text,text,text,integer,integer,jsonb) from public;
-grant execute on function public.admin_create_manual_order(uuid,text,text,text,text,text,text,text,integer,integer,jsonb) to authenticated;
+revoke all on function public.admin_create_manual_order(uuid,date,text,text,text,text,text,text,text,integer,integer,jsonb) from public;
+grant execute on function public.admin_create_manual_order(uuid,date,text,text,text,text,text,text,text,integer,integer,jsonb) to authenticated;
 
 revoke all on function public.admin_list_pickup_dates() from public;
 grant execute on function public.admin_list_pickup_dates() to authenticated;

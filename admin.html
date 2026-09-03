@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Bakery Admin | Jeni's Home Baked Goods</title>
   <link rel="stylesheet" href="styles.css?v=20260810-admin-pages" />
-  <link rel="stylesheet" href="admin.css?v=20260831-inventory" />
+  <link rel="stylesheet" href="admin.css?v=20260902-special-manual-date" />
 </head>
 <body>
   <header class="site-header admin-header">
@@ -84,6 +84,14 @@
             <label>
               Order date
               <select id="manual-pickup-date" required></select>
+            </label>
+            <label class="manual-special-date-toggle">
+              <span>Special date</span>
+              <input id="manual-use-special-date" type="checkbox" />
+            </label>
+            <label id="manual-special-date-field" hidden>
+              Special order date
+              <input id="manual-special-pickup-date" type="date" />
             </label>
             <label>
               Customer name
@@ -352,6 +360,6 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="admin.js?v=20260831-bath-bomb-bundle"></script>
+  <script src="admin.js?v=20260902-special-manual-date"></script>
 </body>
 </html>
