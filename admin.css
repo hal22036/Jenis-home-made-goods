@@ -294,10 +294,11 @@
 .dymo-label {
   display: grid;
   align-content: center;
-  gap: 2px;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  gap: 1px;
   width: 2.125in;
   height: 1in;
-  padding: 0.08in 0.1in;
+  padding: 0.05in 0.07in;
   overflow: hidden;
   color: #000;
   background: #fff;
@@ -307,28 +308,49 @@
   break-after: page;
 }
 
-.dymo-label strong,
-.dymo-label span,
-.dymo-label small {
+.dymo-label-customer,
+.dymo-label-payment,
+.dymo-label-date {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.dymo-label strong {
-  font-size: 11pt;
+.dymo-label-customer {
+  font-size: 10pt;
   line-height: 1;
 }
 
-.dymo-label span {
-  font-size: 9pt;
+.dymo-label-item {
+  display: -webkit-box;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 8.5pt;
+  font-weight: 700;
+  line-height: 1.05;
+}
+
+.dymo-label-item.is-long {
+  font-size: 7.5pt;
+}
+
+.dymo-label-item.is-very-long {
+  font-size: 6.8pt;
+}
+
+.dymo-label-payment {
+  font-size: 8pt;
   font-weight: 700;
   line-height: 1;
 }
 
-.dymo-label small {
-  font-size: 7pt;
+.dymo-label-date {
+  font-size: 6.5pt;
   line-height: 1;
 }
 

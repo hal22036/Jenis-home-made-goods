@@ -1026,14 +1026,19 @@ function printSelectedLabels() {
 }
 
 function printLabels(labels) {
-  el.labelPrintRoot.innerHTML = labels.map(label => `
+  el.labelPrintRoot.innerHTML = labels.map(label => {
+    const itemName = String(label.itemName || "Order item");
+    const itemSizeClass = `${itemName.length > 28 ? "is-long" : ""} ${itemName.length > 42 ? "is-very-long" : ""}`.trim();
+
+    return `
     <section class="dymo-label">
-      <strong>${escapeHtml(label.customerName)}</strong>
-      <span>${escapeHtml(label.itemName)}</span>
-      <span>${escapeHtml(label.paymentMethod)}</span>
-      <small>${prettyDate(label.pickupDate)}</small>
+      <strong class="dymo-label-customer">${escapeHtml(label.customerName)}</strong>
+      <span class="dymo-label-item ${itemSizeClass}">${escapeHtml(itemName)}</span>
+      <span class="dymo-label-payment">${escapeHtml(label.paymentMethod)}</span>
+      <small class="dymo-label-date">${prettyDate(label.pickupDate)}</small>
     </section>
-  `).join("");
+  `;
+  }).join("");
 
   document.body.classList.add("printing-labels");
   window.print();
