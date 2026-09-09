@@ -292,20 +292,26 @@
 }
 
 .dymo-label {
-  display: grid;
-  align-content: center;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   gap: 1px;
   width: 2.125in;
   height: 1in;
-  padding: 0.05in 0.07in;
+  padding: 0.045in 0.065in;
   overflow: hidden;
   color: #000;
   background: #fff;
   font-family: Arial, sans-serif;
   text-align: center;
+  box-sizing: border-box;
   page-break-after: always;
   break-after: page;
+}
+
+.dymo-label:last-child {
+  page-break-after: auto;
+  break-after: auto;
 }
 
 .dymo-label-customer,
@@ -319,7 +325,7 @@
 
 .dymo-label-customer {
   font-size: 10pt;
-  line-height: 1;
+  line-height: 0.98;
 }
 
 .dymo-label-item {
@@ -332,7 +338,7 @@
   -webkit-line-clamp: 2;
   font-size: 8.5pt;
   font-weight: 700;
-  line-height: 1.05;
+  line-height: 0.98;
 }
 
 .dymo-label-item.is-long {
@@ -346,12 +352,12 @@
 .dymo-label-payment {
   font-size: 8pt;
   font-weight: 700;
-  line-height: 1;
+  line-height: 0.98;
 }
 
 .dymo-label-date {
   font-size: 6.5pt;
-  line-height: 1;
+  line-height: 0.98;
 }
 
 .label-review-modal {
@@ -1008,10 +1014,22 @@
 
   body.printing-labels .label-print-root {
     display: block;
+    margin: 0;
+    padding: 0;
   }
 
   body.printing-labels .dymo-label {
     box-shadow: none;
     border: 0;
+  }
+
+  body.printing-labels .dymo-label:not(:last-child) {
+    page-break-after: always;
+    break-after: page;
+  }
+
+  body.printing-labels .dymo-label:last-child {
+    page-break-after: auto;
+    break-after: auto;
   }
 }

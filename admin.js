@@ -1026,7 +1026,14 @@ function printSelectedLabels() {
 }
 
 function printLabels(labels) {
-  el.labelPrintRoot.innerHTML = labels.map(label => {
+  const printableLabels = labels.filter(label => label && (label.customerName || label.itemName));
+
+  if (!printableLabels.length) {
+    setMessage(el.adminMessage, "No labels selected to print.", "error");
+    return;
+  }
+
+  el.labelPrintRoot.innerHTML = printableLabels.map(label => {
     const itemName = String(label.itemName || "Order item");
     const itemSizeClass = `${itemName.length > 28 ? "is-long" : ""} ${itemName.length > 42 ? "is-very-long" : ""}`.trim();
 
