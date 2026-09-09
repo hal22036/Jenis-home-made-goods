@@ -45,6 +45,7 @@ const el = {
   dateAdminMessage: document.querySelector("#date-admin-message"),
   productAdminMessage: document.querySelector("#product-admin-message"),
   couponAdminMessage: document.querySelector("#coupon-admin-message"),
+  labelPrintRoot: document.querySelector("#label-print-root"),
   ordersList: document.querySelector("#orders-list"),
   pickupDatesList: document.querySelector("#pickup-dates-list"),
   productsList: document.querySelector("#products-list"),
@@ -756,7 +757,11 @@ function renderOrders() {
           <h3>${prettyDate(pickupDate)}</h3>
           <span>${dateOrders.length} order${dateOrders.length === 1 ? "" : "s"}</span>
         </div>
-        ${archivePickupDateButtonMarkup(pickupDate)}
+        <div class="order-date-actions">
+          ${labelPrintButtonMarkup(pickupDate, dateOrders, "baked")}
+          ${labelPrintButtonMarkup(pickupDate, dateOrders, "bath-body")}
+          ${archivePickupDateButtonMarkup(pickupDate)}
+        </div>
       </div>
       ${bakingBreakdownMarkup(dateOrders)}
       <div class="orders-list">
@@ -792,6 +797,27 @@ function renderOrders() {
   el.ordersList.querySelectorAll("[data-archive-pickup-date]").forEach(button => {
     button.addEventListener("click", archivePickupDateOrders);
   });
+
+  el.ordersList.querySelectorAll("[data-print-labels]").forEach(button => {
+    button.addEventListener("click", printOrderLabels);
+  });
+}
+
+function labelPrintButtonMarkup(pickupDate, orders, batchType) {
+  const labels = orderLabelsFor(orders, batchType);
+  const label = batchType === "bath-body" ? "Print Bath & Body labels" : "Print Baked Goods labels";
+
+  return `
+    <button
+      class="secondary-button compact-button print-label-button"
+      type="button"
+      data-print-labels="${batchType}"
+      data-print-pickup-date="${pickupDate}"
+      ${labels.length ? "" : "disabled"}
+    >
+      ${label} (${labels.length})
+    </button>
+  `;
 }
 
 function archivePickupDateButtonMarkup(pickupDate) {
@@ -868,6 +894,70 @@ function sortedBreakdownItems(itemTotals) {
 
 function isBreadLoafItem(item) {
   return Number(item.capacity_units || 0) > 0 && item.category !== "Other Delicious Treats";
+}
+
+function isBathBodyItem(item) {
+  return item.category === "Bath & Body";
+}
+
+function orderLabelsFor(orders, batchType) {
+  const labels = [];
+
+  orders
+    .filter(order => order.fulfillment_status !== "canceled")
+    .forEach(order => {
+      (order.items || []).forEach(item => {
+        const belongsInBatch = batchType === "bath-body"
+          ? isBathBodyItem(item)
+          : !isBathBodyItem(item);
+
+        if (!belongsInBatch) return;
+
+        const quantity = Math.max(Number(item.quantity || 0), 0);
+        for (let index = 0; index < quantity; index += 1) {
+          labels.push({
+            customerName: order.customer_name,
+            itemName: adminItemName(item),
+            paymentMethod: paymentLabel(order.payment_method),
+            pickupDate: order.pickup_date
+          });
+        }
+      });
+    });
+
+  return labels;
+}
+
+function printOrderLabels(event) {
+  const button = event.currentTarget;
+  const pickupDate = button.dataset.printPickupDate;
+  const orderId = button.dataset.printOrderId;
+  const batchType = button.dataset.printLabels;
+  const printOrders = orderId
+    ? state.orders.filter(order => order.order_id === orderId)
+    : filteredOrders().filter(order => order.pickup_date === pickupDate);
+  const labels = orderLabelsFor(printOrders, batchType);
+
+  if (!labels.length) {
+    setMessage(el.adminMessage, "No labels to print for that batch.", "error");
+    return;
+  }
+
+  el.labelPrintRoot.innerHTML = labels.map(label => `
+    <section class="dymo-label">
+      <strong>${escapeHtml(label.customerName)}</strong>
+      <span>${escapeHtml(label.itemName)}</span>
+      <span>${escapeHtml(label.paymentMethod)}</span>
+      <small>${prettyDate(label.pickupDate)}</small>
+    </section>
+  `).join("");
+
+  document.body.classList.add("printing-labels");
+  window.print();
+  window.setTimeout(() => {
+    document.body.classList.remove("printing-labels");
+    el.labelPrintRoot.innerHTML = "";
+  }, 500);
 }
 
 function breakdownTableMarkup(title, items) {
@@ -1024,6 +1114,8 @@ function orderCardMarkup(order) {
         <a class="secondary-button compact-button" href="invoice.html?order=${encodeURIComponent(order.order_code)}" target="_blank" rel="noopener">
           View invoice
         </a>
+        ${singleOrderLabelPrintButtonMarkup(order, "baked")}
+        ${singleOrderLabelPrintButtonMarkup(order, "bath-body")}
         <button class="secondary-button compact-button" type="button" data-save-order>
           Save order status
         </button>
@@ -1031,6 +1123,23 @@ function orderCardMarkup(order) {
       <p class="message" data-order-message></p>
       </div>
     </details>
+  `;
+}
+
+function singleOrderLabelPrintButtonMarkup(order, batchType) {
+  const labels = orderLabelsFor([order], batchType);
+  const label = batchType === "bath-body" ? "Print Bath & Body labels" : "Print Baked Goods labels";
+
+  return `
+    <button
+      class="secondary-button compact-button print-label-button"
+      type="button"
+      data-print-labels="${batchType}"
+      data-print-order-id="${order.order_id}"
+      ${labels.length ? "" : "disabled"}
+    >
+      ${label} (${labels.length})
+    </button>
   `;
 }
 
