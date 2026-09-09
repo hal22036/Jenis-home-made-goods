@@ -9,6 +9,7 @@ const state = {
   pickupDates: [],
   products: [],
   activeProductAdminTab: "baked-goods",
+  pendingPrintLabels: [],
   coupons: [],
   taxSettings: null
 };
@@ -45,6 +46,15 @@ const el = {
   dateAdminMessage: document.querySelector("#date-admin-message"),
   productAdminMessage: document.querySelector("#product-admin-message"),
   couponAdminMessage: document.querySelector("#coupon-admin-message"),
+  labelReviewModal: document.querySelector("#label-review-modal"),
+  labelReviewTitle: document.querySelector("#label-review-title"),
+  labelReviewCount: document.querySelector("#label-review-count"),
+  labelReviewList: document.querySelector("#label-review-list"),
+  closeLabelReview: document.querySelector("#close-label-review"),
+  cancelLabelPrint: document.querySelector("#cancel-label-print"),
+  selectAllLabels: document.querySelector("#select-all-labels"),
+  clearAllLabels: document.querySelector("#clear-all-labels"),
+  printSelectedLabels: document.querySelector("#print-selected-labels"),
   labelPrintRoot: document.querySelector("#label-print-root"),
   ordersList: document.querySelector("#orders-list"),
   pickupDatesList: document.querySelector("#pickup-dates-list"),
@@ -300,6 +310,12 @@ el.clearOrderFilters.addEventListener("click", () => {
   el.orderInvoiceFilter.value = "all";
   renderOrders();
 });
+el.closeLabelReview.addEventListener("click", closeLabelReview);
+el.cancelLabelPrint.addEventListener("click", closeLabelReview);
+el.selectAllLabels.addEventListener("click", () => setLabelReviewChecked(true));
+el.clearAllLabels.addEventListener("click", () => setLabelReviewChecked(false));
+el.printSelectedLabels.addEventListener("click", printSelectedLabels);
+el.labelReviewList.addEventListener("change", updateLabelReviewCount);
 el.addManualItem.addEventListener("click", () => addManualItemRow());
 el.manualUseSpecialDate.addEventListener("change", syncManualSpecialDateFields);
 el.manualItemsList.addEventListener("input", updateManualOrderSubtotal);
@@ -933,6 +949,7 @@ function printOrderLabels(event) {
   const pickupDate = button.dataset.printPickupDate;
   const orderId = button.dataset.printOrderId;
   const batchType = button.dataset.printLabels;
+  const batchLabel = batchType === "bath-body" ? "Bath & Body" : "Baked Goods";
   const printOrders = orderId
     ? state.orders.filter(order => order.order_id === orderId)
     : filteredOrders().filter(order => order.pickup_date === pickupDate);
@@ -943,6 +960,72 @@ function printOrderLabels(event) {
     return;
   }
 
+  if (!orderId) {
+    openLabelReview(labels, `${batchLabel} labels for ${prettyDate(pickupDate)}`);
+    return;
+  }
+
+  printLabels(labels);
+}
+
+function openLabelReview(labels, title) {
+  state.pendingPrintLabels = labels;
+  el.labelReviewTitle.textContent = title;
+  el.labelReviewList.innerHTML = labels.map((label, index) => `
+    <label class="label-review-item">
+      <input type="checkbox" data-label-index="${index}" checked />
+      <span>
+        <strong>${escapeHtml(label.customerName)}</strong>
+        ${escapeHtml(label.itemName)}
+        <small>${escapeHtml(label.paymentMethod)} - ${prettyDate(label.pickupDate)}</small>
+      </span>
+    </label>
+  `).join("");
+  el.labelReviewModal.hidden = false;
+  updateLabelReviewCount();
+  el.labelReviewModal.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function closeLabelReview() {
+  state.pendingPrintLabels = [];
+  el.labelReviewModal.hidden = true;
+  el.labelReviewList.innerHTML = "";
+  el.labelReviewCount.textContent = "";
+}
+
+function setLabelReviewChecked(checked) {
+  el.labelReviewList.querySelectorAll("[data-label-index]").forEach(input => {
+    input.checked = checked;
+  });
+  updateLabelReviewCount();
+}
+
+function selectedReviewLabels() {
+  return [...el.labelReviewList.querySelectorAll("[data-label-index]:checked")]
+    .map(input => state.pendingPrintLabels[Number(input.dataset.labelIndex)])
+    .filter(Boolean);
+}
+
+function updateLabelReviewCount() {
+  const selectedCount = selectedReviewLabels().length;
+  const totalCount = state.pendingPrintLabels.length;
+  el.labelReviewCount.textContent = `${selectedCount} of ${totalCount} labels selected`;
+  el.printSelectedLabels.disabled = selectedCount === 0;
+}
+
+function printSelectedLabels() {
+  const labels = selectedReviewLabels();
+
+  if (!labels.length) {
+    setMessage(el.adminMessage, "Choose at least one label to print.", "error");
+    return;
+  }
+
+  closeLabelReview();
+  printLabels(labels);
+}
+
+function printLabels(labels) {
   el.labelPrintRoot.innerHTML = labels.map(label => `
     <section class="dymo-label">
       <strong>${escapeHtml(label.customerName)}</strong>

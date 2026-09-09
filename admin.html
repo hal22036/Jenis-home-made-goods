@@ -359,9 +359,31 @@
     </section>
   </main>
 
+  <section id="label-review-modal" class="label-review-modal" aria-labelledby="label-review-title" hidden>
+    <div class="label-review-panel">
+      <div class="label-review-header">
+        <div>
+          <p class="step">Print labels</p>
+          <h2 id="label-review-title">Confirm batch labels</h2>
+          <p id="label-review-count" class="muted"></p>
+        </div>
+        <button class="secondary-button compact-button" type="button" id="close-label-review">Close</button>
+      </div>
+      <div class="label-review-actions">
+        <button class="secondary-button compact-button" type="button" id="select-all-labels">Select all</button>
+        <button class="secondary-button compact-button" type="button" id="clear-all-labels">Clear all</button>
+      </div>
+      <div id="label-review-list" class="label-review-list"></div>
+      <div class="label-review-footer">
+        <button class="secondary-button compact-button" type="button" id="cancel-label-print">Cancel</button>
+        <button type="button" id="print-selected-labels">Print selected labels</button>
+      </div>
+    </div>
+  </section>
+
   <div id="label-print-root" class="label-print-root" aria-hidden="true"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="admin.js?v=20260909-dymo-label-print"></script>
+  <script src="admin.js?v=20260909-label-print-review"></script>
 </body>
 </html>

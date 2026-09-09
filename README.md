@@ -229,7 +229,7 @@ The admin page can:
 - view orders without opening Supabase
 - mark payment status as pending, paid, or refunded
 - mark fulfillment status as new, prepping, ready, fulfilled, or canceled
-- print 1 inch by 2 1/8 inch Dymo labels for a single order or a full order-date batch
+- print 1 inch by 2 1/8 inch Dymo labels for a single order or a reviewed order-date batch
 - archive finished orders
 - add or edit Friday pickup dates
 - open or close pickup dates
