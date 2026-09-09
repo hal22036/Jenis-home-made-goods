@@ -315,8 +315,7 @@
 }
 
 .dymo-label-customer,
-.dymo-label-payment,
-.dymo-label-date {
+.dymo-label-details {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -349,14 +348,9 @@
   font-size: 6.8pt;
 }
 
-.dymo-label-payment {
-  font-size: 8pt;
+.dymo-label-details {
+  font-size: 7.5pt;
   font-weight: 700;
-  line-height: 0.98;
-}
-
-.dymo-label-date {
-  font-size: 6.5pt;
   line-height: 0.98;
 }
 

@@ -1041,8 +1041,7 @@ function printLabels(labels) {
     <section class="dymo-label">
       <strong class="dymo-label-customer">${escapeHtml(label.customerName)}</strong>
       <span class="dymo-label-item ${itemSizeClass}">${escapeHtml(itemName)}</span>
-      <span class="dymo-label-payment">${escapeHtml(label.paymentMethod)}</span>
-      <small class="dymo-label-date">${prettyDate(label.pickupDate)}</small>
+      <span class="dymo-label-details">${escapeHtml(label.paymentMethod)} - ${prettyDate(label.pickupDate)}</span>
     </section>
   `;
   }).join("");
