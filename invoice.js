@@ -165,6 +165,15 @@ function renderInvoice(order) {
       </p>
     </div>
 
+    <div class="satisfaction-notice invoice-satisfaction-notice" role="note">
+      <strong>Customer satisfaction</strong>
+      <p>
+        Your order matters to me. Because each item is made to order, refunds are not available.
+        If something is wrong with your order, please reach out as soon as possible so I can help
+        make it right with a replacement item of equal or lesser value when appropriate.
+      </p>
+    </div>
+
     <div class="summary">
       <div class="total-lines">
         <div><span>Subtotal</span><span>${money(order.subtotal_cents || order.total_cents)}</span></div>
