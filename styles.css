@@ -804,6 +804,16 @@ button[type="submit"]:hover,
   text-align: center;
 }
 
+.submit-reminder {
+  margin: 14px 0 10px;
+  padding: 12px 14px;
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-weight: 800;
+}
+
 .edit-payment summary {
   color: var(--accent);
   cursor: pointer;

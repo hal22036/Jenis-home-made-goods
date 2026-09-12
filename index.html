@@ -114,7 +114,7 @@
               <input type="radio" name="fulfillment" value="pickup" checked />
               <span class="fulfillment-title">Pickup</span>
               <span class="fulfillment-copy">
-                Pick up your order on the Friday date you selected between 4-7 pm.
+                Food pickup uses the Friday date selected above. Bath & Body pickup is arranged with Jeni.
               </span>
             </label>
             <label class="fulfillment-card" id="shipping-option" hidden>
@@ -154,13 +154,16 @@
         </fieldset>
 
         <p data-pickup-note class="pickup-note"></p>
-        <button id="submit-order" type="submit">Click here to verify order</button>
+        <p class="submit-reminder">
+          Next step: review your invoice. Your order is not placed until you press Place order on the next screen.
+        </p>
+        <button id="submit-order" type="submit">Review invoice before placing order</button>
         <p id="form-message" class="message" role="status"></p>
       </form>
     </section>
 
     <section class="panel" id="review-section" aria-labelledby="review-heading" hidden>
-      <p class="checkout-note"><strong>Review your invoice, then place your order below to check out.</strong></p>
+      <p class="checkout-note"><strong>Almost done. Review your invoice, then press the green Place order button below.</strong></p>
       <div class="satisfaction-notice" role="note">
         <strong>Customer satisfaction</strong>
         <p>
@@ -223,6 +226,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=20260911-satisfaction-policy"></script>
+  <script src="app.js?v=20260912-streamlined-checkout"></script>
 </body>
 </html>

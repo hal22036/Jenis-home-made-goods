@@ -14,7 +14,7 @@ const ASSET_VERSION = "20260901-granola-cache-fix";
 const STORE_SETTINGS = {
   bakeryName: "Jeni's Home Made Goods",
   intro:
-    "Small-batch goods made to order. Choose a future pickup date, build your order, then choose your payment option.",
+    "Small-batch goods made to order. Choose Baked Goods for Friday pickup items or Bath & Body for handmade gifts.",
   pickupWindow: "4-7 pm",
   pickupAddress: "7140 Anchor Terrace St.",
   gateCode: "#7716",
@@ -338,6 +338,30 @@ function productsForActiveTab() {
   return state.products.filter(product => productTabFor(product) === state.activeProductTab);
 }
 
+function selectedFoodItems() {
+  return state.products.filter(product =>
+    productTabFor(product) === "baked-goods" && (state.quantities[product.id] || 0) > 0
+  );
+}
+
+function selectedBathBodyItems() {
+  return state.products.filter(product =>
+    productTabFor(product) === "bath-body" && (state.quantities[product.id] || 0) > 0
+  );
+}
+
+function orderNeedsFoodPickupDate() {
+  return selectedFoodItems().length > 0;
+}
+
+function shouldShowPickupDates() {
+  return state.activeProductTab === "baked-goods" || orderNeedsFoodPickupDate();
+}
+
+function effectiveOrderDate() {
+  return state.selectedDate || state.dates[0] || null;
+}
+
 function availableProductTabs() {
   const productTabs = new Set(state.products.map(productTabFor));
   return STORE_SETTINGS.productTabs.filter(tab => productTabs.has(tab.id));
@@ -625,6 +649,24 @@ function fulfillmentSummary(details, items) {
   return "Pickup";
 }
 
+function orderTimingLabel(details, items) {
+  const hasFoodItems = items.some(item => item.productTab === "baked-goods");
+
+  if (details.fulfillmentMethod === "shipping" && !hasFoodItems) return "Ship";
+  if (!hasFoodItems) return "Timing";
+  return details.fulfillmentMethod === "shipping" ? "Ship/Pickup" : "Pickup";
+}
+
+function orderTimingValue(details, items) {
+  const orderDate = effectiveOrderDate();
+  const hasFoodItems = items.some(item => item.productTab === "baked-goods");
+
+  if (!hasFoodItems && details.fulfillmentMethod === "shipping") return "Shipping timing will be confirmed";
+  if (!orderDate) return "Jeni will contact you";
+  if (!hasFoodItems && details.fulfillmentMethod !== "shipping") return "Jeni will contact you for pickup";
+  return prettyDate(orderDate.pickup_date);
+}
+
 function pickupDetailsMarkup(pickupDate) {
   return `
     <div class="pickup-details">
@@ -652,15 +694,40 @@ function shippingDetailsMarkup(pickupDate) {
 }
 
 function fulfillmentDetailsMarkup(details, items) {
+  const orderDate = effectiveOrderDate();
+  const hasFoodItems = items.some(item => item.productTab === "baked-goods");
+
+  if (!hasFoodItems && details.fulfillmentMethod !== "shipping") {
+    return `
+      <div class="pickup-details">
+        <h3>Pickup details</h3>
+        <p>Jeni will contact you to arrange pickup for Bath & Body items.</p>
+        <p>Please call/text with any questions: ${STORE_SETTINGS.contactPhone}.</p>
+      </div>
+    `;
+  }
+
+  if (!hasFoodItems && details.fulfillmentMethod === "shipping") {
+    return `
+      <div class="pickup-details">
+        <h3>Shipping details</h3>
+        <p>Jeni will contact you if any shipping details need to be confirmed.</p>
+        <p>Please call/text with any questions: ${STORE_SETTINGS.contactPhone}.</p>
+      </div>
+    `;
+  }
+
+  if (!orderDate) return "";
+
   if (details.fulfillmentMethod !== "shipping") {
-    return pickupDetailsMarkup(state.selectedDate.pickup_date);
+    return pickupDetailsMarkup(orderDate.pickup_date);
   }
 
   const hasPickupItems = items.some(item => !item.shippable);
 
   return `
-    ${shippingDetailsMarkup(state.selectedDate.pickup_date)}
-    ${hasPickupItems ? pickupDetailsMarkup(state.selectedDate.pickup_date) : ""}
+    ${shippingDetailsMarkup(orderDate.pickup_date)}
+    ${hasPickupItems ? pickupDetailsMarkup(orderDate.pickup_date) : ""}
   `;
 }
 
@@ -720,6 +787,16 @@ function updateShippingFields() {
 
   state.orderTotals = null;
   updateSummary();
+}
+
+function syncPageFlow() {
+  const showPickupDates = shouldShowPickupDates();
+
+  if (!el.reviewSection.hidden || !el.successSection.hidden) return;
+
+  el.dateSection.hidden = !showPickupDates;
+  el.menuSection.hidden = false;
+  el.customerSection.hidden = false;
 }
 
 async function calculateOrderTotals() {
@@ -841,6 +918,9 @@ async function loadStore() {
   state.products = products || [];
 
   renderDates();
+  renderProducts();
+  syncPageFlow();
+  updateShippingFields();
 }
 
 function renderDates() {
@@ -869,7 +949,6 @@ function renderDates() {
 
 function selectDate(dateId) {
   state.selectedDate = state.dates.find(d => d.id === dateId);
-  state.quantities = {};
   state.orderTotals = null;
   resetCoupon();
   el.couponCode.value = "";
@@ -894,6 +973,11 @@ function renderProducts() {
 
   if (!state.products.length) {
     el.productList.innerHTML = "<p class=\"muted\">No active items are listed yet.</p>";
+    return;
+  }
+
+  if (state.activeProductTab === "baked-goods" && !state.selectedDate) {
+    el.productList.innerHTML = "<p class=\"muted\">Choose a Friday pickup date above to order baked goods.</p>";
     return;
   }
 
@@ -985,6 +1069,7 @@ function renderProductTabs() {
       state.activeProductTab = button.dataset.productTab;
       renderProducts();
       updateSummary();
+      syncPageFlow();
     });
   });
 }
@@ -1087,6 +1172,7 @@ function renderProductCard(products) {
 function isQuantityButtonDisabled(action, product) {
   if (action === "minus") return state.quantities[product.id] === 0;
   if (productTracksInventory(product) && selectedInventoryQuantity(product) >= inventoryQuantityFor(product)) return true;
+  if (capacityUnitsFor(product) > 0 && !state.selectedDate) return true;
 
   return (
     capacityUnitsFor(product) > 0 &&
@@ -1131,15 +1217,14 @@ function updateProductQuantity(action, product) {
 
   updateSummary();
   renderProducts();
+  syncPageFlow();
   updateShippingFields();
 }
 
 function updateSummary() {
-  if (!state.selectedDate) return;
-
   const remaining = remainingForSelectedDate();
   const count = selectedCapacityUnits();
-  const showLoafCounter = state.activeProductTab === "baked-goods";
+  const showLoafCounter = state.activeProductTab === "baked-goods" && Boolean(state.selectedDate);
 
   el.capacityMessage.textContent = "";
 
@@ -1190,14 +1275,27 @@ el.form.addEventListener("submit", async event => {
   if (state.isSubmitting) return;
 
   const totalQty = selectedQuantity();
+  const itemsNeedPickupDate = orderNeedsFoodPickupDate();
 
-  if (!state.selectedDate) {
+  if (itemsNeedPickupDate && !state.selectedDate) {
     setMessage("Please choose a pickup date.", "error");
+    el.dateSection.hidden = false;
+    window.scrollTo({ top: el.dateSection.offsetTop - 16, behavior: "smooth" });
     return;
   }
 
   if (totalQty < 1) {
     setMessage("Please add at least one item.", "error");
+    return;
+  }
+
+  if (!effectiveOrderDate()) {
+    setMessage("Orders are not available right now. Please check back when Jeni has added an order date.", "error");
+    return;
+  }
+
+  if (itemsNeedPickupDate && selectedCapacityUnits() > remainingForSelectedDate()) {
+    setMessage("That pickup date does not have enough loaf spots left. Please choose another date or reduce your quantity.", "error");
     return;
   }
 
@@ -1243,7 +1341,8 @@ function selectedItemsWithDetails() {
       price_cents: product.price_cents,
       capacity_units: capacityUnitsFor(product),
       image_url: cleanText(product.image_url),
-      shippable: productIsShippable(product)
+      shippable: productIsShippable(product),
+      productTab: productTabFor(product)
     }))
     .sort((a, b) => compareText(a.name, b.name));
 }
@@ -1296,12 +1395,12 @@ async function showReview() {
 
   el.reviewContent.innerHTML = `
     <dl class="receipt invoice-receipt">
-      <div><dt>${details.fulfillmentMethod === "shipping" ? "Ship date" : "Pickup"}</dt><dd>${prettyDate(state.selectedDate.pickup_date)}</dd></div>
+      <div><dt>${orderTimingLabel(details, items)}</dt><dd>${orderTimingValue(details, items)}</dd></div>
       <div><dt>Name</dt><dd>${escapeHtml(details.name)}</dd></div>
       <div><dt>Phone</dt><dd>${details.phone}</dd></div>
       <div><dt>Payment</dt><dd>${payment.label}</dd></div>
       <div><dt>Method</dt><dd>${fulfillmentSummary(details, items)}</dd></div>
-      <div><dt>Loaf spots</dt><dd>${selectedCapacityUnits()}</dd></div>
+      ${selectedCapacityUnits() ? `<div><dt>Loaf spots</dt><dd>${selectedCapacityUnits()}</dd></div>` : ""}
     </dl>
     ${details.fulfillmentMethod === "shipping" ? `
       <p class="admin-notes"><strong>Shipping address:</strong> ${escapeHtml(details.shippingAddress)}</p>
@@ -1411,7 +1510,7 @@ async function submitReviewedOrder() {
   }
 
   const { data, error } = await supabaseClient.rpc("place_order", {
-    p_pickup_date_id: state.selectedDate.id,
+    p_pickup_date_id: effectiveOrderDate().id,
     p_customer_name: details.name,
     p_customer_email: invoiceRequested ? details.email : null,
     p_customer_phone: details.phone,
@@ -1486,7 +1585,7 @@ function showSuccess(result, paymentMethod, invoiceRequested, items, details, co
 
   el.successContent.innerHTML = `
     <dl class="receipt">
-      <div><dt>${details.fulfillmentMethod === "shipping" ? "Ship date" : "Pickup"}</dt><dd>${prettyDate(state.selectedDate.pickup_date)}</dd></div>
+      <div><dt>${orderTimingLabel(details, items)}</dt><dd>${orderTimingValue(details, items)}</dd></div>
       <div><dt>Order number</dt><dd>${result.order_code}</dd></div>
       <div><dt>Total</dt><dd>${money(result.total_cents)}</dd></div>
       ${coupon ? `<div><dt>Coupon</dt><dd>${coupon.code} (${couponAppliesToLabel(coupon.applies_to)}) -${money(coupon.discount_cents)}</dd></div>` : ""}
@@ -1595,8 +1694,8 @@ async function startAnotherOrder() {
   el.successSection.hidden = true;
   el.dateSection.hidden = false;
   el.intro.hidden = false;
-  el.menuSection.hidden = true;
-  el.customerSection.hidden = true;
+  el.menuSection.hidden = false;
+  el.customerSection.hidden = false;
   el.reviewSection.hidden = true;
   el.successContent.innerHTML = "";
   el.copyMessage.textContent = "";
