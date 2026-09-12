@@ -787,6 +787,7 @@ function updateShippingFields() {
 
   state.orderTotals = null;
   updateSummary();
+  refreshCheckoutReview();
 }
 
 function syncPageFlow() {
@@ -797,6 +798,13 @@ function syncPageFlow() {
   el.dateSection.hidden = !showPickupDates;
   el.menuSection.hidden = false;
   el.customerSection.hidden = false;
+  renderCheckoutReview();
+}
+
+function refreshCheckoutReview() {
+  if (!el.customerSection.hidden) {
+    renderCheckoutReview();
+  }
 }
 
 async function calculateOrderTotals() {
@@ -1239,10 +1247,16 @@ el.customerPhone.addEventListener("blur", syncPhoneFormat);
 document.querySelectorAll('input[name="fulfillment"]').forEach(input => {
   input.addEventListener("change", updateShippingFields);
 });
+shippingAddressFields().forEach(field => {
+  field.addEventListener("input", () => {
+    state.orderTotals = null;
+    refreshCheckoutReview();
+  });
+});
 el.applyCoupon.addEventListener("click", async () => {
   const applied = await applyCouponCode();
-  if (applied && !el.reviewSection.hidden) {
-    showReview();
+  if (applied) {
+    renderCheckoutReview();
   }
 });
 el.removeCoupon.addEventListener("click", () => {
@@ -1250,9 +1264,7 @@ el.removeCoupon.addEventListener("click", () => {
   el.couponCode.value = "";
   setCouponMessage("Coupon removed.");
   updateSummary();
-  if (!el.reviewSection.hidden) {
-    showReview();
-  }
+  renderCheckoutReview();
 });
 
 el.imageViewerClose?.addEventListener("click", closeImageViewer);
@@ -1323,12 +1335,7 @@ el.form.addEventListener("submit", async event => {
     }
   }
 
-  try {
-    await showReview();
-  } catch (error) {
-    console.error(error);
-    setMessage(error.message || "Could not calculate your order total. Please try again.", "error");
-  }
+  await submitReviewedOrder();
 });
 
 function selectedItemsWithDetails() {
@@ -1373,36 +1380,28 @@ function updateInvoiceEmailField() {
   }
 }
 
-async function showReview() {
-  const details = customerDetails();
+function renderCheckoutReview() {
+  if (!el.reviewContent) return;
 
-  if (!hasValidPaymentMethod(details.paymentMethod)) {
-    setMessage("Please choose a payment option.", "error");
+  const items = selectedItemsWithDetails();
+  const details = {
+    fulfillmentMethod: fulfillmentMethod(),
+    shippingAddress: shippingAddress()
+  };
+  const totals = state.orderTotals;
+
+  if (!items.length) {
+    el.reviewContent.innerHTML = "<p class=\"muted\">Add items above to build your invoice.</p>";
     return;
   }
-
-  const payment = STORE_SETTINGS.paymentOptions[details.paymentMethod];
-  const items = selectedItemsWithDetails();
-  const totals = await calculateOrderTotals();
-
-  el.intro.hidden = true;
-  el.dateSection.hidden = true;
-  el.menuSection.hidden = true;
-  el.customerSection.hidden = true;
-  el.reviewSection.hidden = false;
-  el.successSection.hidden = true;
-  setReviewMessage();
 
   el.reviewContent.innerHTML = `
     <dl class="receipt invoice-receipt">
       <div><dt>${orderTimingLabel(details, items)}</dt><dd>${orderTimingValue(details, items)}</dd></div>
-      <div><dt>Name</dt><dd>${escapeHtml(details.name)}</dd></div>
-      <div><dt>Phone</dt><dd>${details.phone}</dd></div>
-      <div><dt>Payment</dt><dd>${payment.label}</dd></div>
       <div><dt>Method</dt><dd>${fulfillmentSummary(details, items)}</dd></div>
       ${selectedCapacityUnits() ? `<div><dt>Loaf spots</dt><dd>${selectedCapacityUnits()}</dd></div>` : ""}
     </dl>
-    ${details.fulfillmentMethod === "shipping" ? `
+    ${details.fulfillmentMethod === "shipping" && details.shippingAddress ? `
       <p class="admin-notes"><strong>Shipping address:</strong> ${escapeHtml(details.shippingAddress)}</p>
     ` : ""}
     <div class="invoice-items">
@@ -1440,19 +1439,17 @@ async function showReview() {
             <span>-${money(discountCents())}</span>
           </div>
         ` : ""}
-        <div><span>Tax</span><span>${money(totals.tax_cents)}</span></div>
-        ${totals.shipping_cents ? `
+        <div><span>Tax</span><span>${totals ? money(totals.tax_cents) : "Calculated at checkout"}</span></div>
+        ${totals?.shipping_cents ? `
           <div><span>Shipping</span><span>${money(totals.shipping_cents)}</span></div>
         ` : ""}
-        <div><strong>Total</strong><strong>${money(finalTotalCents())}</strong></div>
+        <div><strong>${totals ? "Total" : "Current total"}</strong><strong>${money(finalTotalCents())}</strong></div>
       </div>
     </div>
   `;
-
-  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-el.editOrder.addEventListener("click", () => {
+el.editOrder?.addEventListener("click", () => {
   el.intro.hidden = false;
   el.dateSection.hidden = false;
   el.menuSection.hidden = false;
@@ -1462,11 +1459,11 @@ el.editOrder.addEventListener("click", () => {
   window.scrollTo({ top: el.menuSection.offsetTop - 16, behavior: "smooth" });
 });
 
-el.confirmOrder.addEventListener("click", submitReviewedOrder);
+el.confirmOrder?.addEventListener("click", submitReviewedOrder);
 
 el.invoiceRequested.addEventListener("change", () => {
   updateInvoiceEmailField();
-  setReviewMessage();
+  setMessage();
 });
 
 async function submitReviewedOrder() {
@@ -1477,14 +1474,12 @@ async function submitReviewedOrder() {
 
   if (!hasValidPaymentMethod(details.paymentMethod)) {
     setMessage("Please choose a payment option before placing your order.", "error");
-    el.reviewSection.hidden = true;
-    el.customerSection.hidden = false;
     window.scrollTo({ top: el.customerSection.offsetTop - 16, behavior: "smooth" });
     return;
   }
 
   if (invoiceRequested && (!details.email || !el.invoiceEmail.checkValidity())) {
-    setReviewMessage("Please enter a valid email address for the receipt.", "error");
+    setMessage("Please enter a valid email address for the receipt.", "error");
     el.invoiceEmail.focus();
     return;
   }
@@ -1497,15 +1492,16 @@ async function submitReviewedOrder() {
     }));
 
   state.isSubmitting = true;
-  el.confirmOrder.disabled = true;
-  setReviewMessage("Submitting your order...", "");
+  el.submit.disabled = true;
+  setMessage("Submitting your order...", "");
 
   try {
     await calculateOrderTotals();
+    renderCheckoutReview();
   } catch (error) {
     state.isSubmitting = false;
-    el.confirmOrder.disabled = false;
-    setReviewMessage(error.message || "Could not calculate your order total. Please try again.", "error");
+    el.submit.disabled = false;
+    setMessage(error.message || "Could not calculate your order total. Please try again.", "error");
     return;
   }
 
@@ -1524,7 +1520,7 @@ async function submitReviewedOrder() {
   });
 
   state.isSubmitting = false;
-  el.confirmOrder.disabled = false;
+  el.submit.disabled = false;
 
   if (error) {
     console.error(error);
@@ -1535,7 +1531,7 @@ async function submitReviewedOrder() {
         ? "One of those items just sold out. Please review your quantities and try again."
         : "Your order could not be submitted. Please check your details and try again.";
 
-    setReviewMessage(message, "error");
+    setMessage(message, "error");
     await refreshSelectedDate();
     return;
   }

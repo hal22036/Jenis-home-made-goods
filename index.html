@@ -9,7 +9,7 @@
   />
   <title>Jeni's Home Made Goods Orders</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-  <link rel="stylesheet" href="styles.css?v=20260901-granola-cache-fix" />
+  <link rel="stylesheet" href="styles.css?v=20260912-review-in-checkout" />
 </head>
 <body>
   <header class="site-header">
@@ -65,10 +65,38 @@
     </section>
 
     <section class="panel" id="customer-section" aria-labelledby="customer-heading" hidden>
-      <p class="step">Step 3</p>
-      <h2 id="customer-heading">Your information</h2>
-
       <form id="order-form">
+        <p class="checkout-note"><strong>Review your invoice below, then enter your information and press the green Place order button.</strong></p>
+        <p class="step">Review order</p>
+        <h2 id="customer-heading">Invoice summary</h2>
+        <div id="review-content"></div>
+
+        <div class="coupon-box checkout-coupon-box">
+          <label>
+            Coupon code
+            <input id="coupon-code" autocomplete="off" autocapitalize="characters" placeholder="Optional" />
+          </label>
+          <div class="coupon-actions">
+            <button class="secondary-button compact-button" type="button" id="apply-coupon">Update total</button>
+            <button class="secondary-button compact-button" type="button" id="remove-coupon" hidden>Remove</button>
+          </div>
+          <p id="coupon-message" class="message" role="status"></p>
+        </div>
+
+        <div class="satisfaction-notice" role="note">
+          <strong>Customer satisfaction</strong>
+          <p>
+            Your order matters to me. Because each item is made to order, refunds are not available.
+            If something is wrong with your order, please reach out as soon as possible so I can help
+            make it right with a replacement item of equal or lesser value when appropriate.
+          </p>
+        </div>
+
+        <div class="checkout-info-heading">
+          <p class="step">Final step</p>
+          <h2>Your information</h2>
+        </div>
+
         <div class="field-grid">
           <label>
             Name
@@ -152,54 +180,29 @@
           <p class="hint">Credit cards are not accepted on this site.</p>
         </fieldset>
 
+        <div class="invoice-request">
+          <span>Email me a receipt?</span>
+          <label class="invoice-yes">
+            <span>Yes</span>
+            <input id="invoice-requested" type="checkbox" />
+          </label>
+        </div>
+        <label class="invoice-email-field" id="invoice-email-field" hidden>
+          Email for receipt
+          <input id="invoice-email" type="email" autocomplete="email" />
+        </label>
+
         <p data-pickup-note class="pickup-note"></p>
         <p class="submit-reminder">
-          Next step: review your invoice. Your order is not placed until you press Place order on the next screen.
+          Your order is not placed until you press this button and see an order number.
         </p>
-        <button id="submit-order" type="submit">Review invoice before placing order</button>
+        <button id="submit-order" class="review-place-button" type="submit">Place order</button>
         <p id="form-message" class="message" role="status"></p>
       </form>
     </section>
 
     <section class="panel" id="review-section" aria-labelledby="review-heading" hidden>
-      <p class="checkout-note"><strong>Almost done. Review your invoice, then press the green Place order button below.</strong></p>
-      <div class="satisfaction-notice" role="note">
-        <strong>Customer satisfaction</strong>
-        <p>
-          Your order matters to me. Because each item is made to order, refunds are not available.
-          If something is wrong with your order, please reach out as soon as possible so I can help
-          make it right with a replacement item of equal or lesser value when appropriate.
-        </p>
-      </div>
-      <p class="step">Review order</p>
       <h2 id="review-heading">Invoice summary</h2>
-      <div id="review-content"></div>
-      <div class="coupon-box checkout-coupon-box">
-        <label>
-          Coupon code
-          <input id="coupon-code" autocomplete="off" autocapitalize="characters" placeholder="Optional" />
-        </label>
-        <div class="coupon-actions">
-          <button class="secondary-button compact-button" type="button" id="apply-coupon">Update total</button>
-          <button class="secondary-button compact-button" type="button" id="remove-coupon" hidden>Remove</button>
-        </div>
-        <p id="coupon-message" class="message" role="status"></p>
-      </div>
-      <div class="invoice-request">
-        <span>Email me a receipt?</span>
-        <label class="invoice-yes">
-          <span>Yes</span>
-          <input id="invoice-requested" type="checkbox" />
-        </label>
-      </div>
-      <label class="invoice-email-field" id="invoice-email-field" hidden>
-        Email for receipt
-        <input id="invoice-email" type="email" autocomplete="email" />
-      </label>
-      <div class="review-actions">
-        <button class="secondary-button review-edit-button" type="button" id="edit-order">Edit order</button>
-        <button class="review-place-button" id="confirm-order" type="button">Place order</button>
-      </div>
       <p id="review-message" class="message" role="status"></p>
     </section>
 
@@ -225,6 +228,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=20260912-pickup-under-baked-tab"></script>
+  <script src="app.js?v=20260912-review-in-checkout"></script>
 </body>
 </html>

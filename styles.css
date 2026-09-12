@@ -822,6 +822,16 @@ button[type="submit"]:hover,
   font-weight: 800;
 }
 
+.checkout-info-heading {
+  margin: 24px 0 16px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.checkout-info-heading h2 {
+  margin-bottom: 0;
+}
+
 .edit-payment summary {
   color: var(--accent);
   cursor: pointer;
