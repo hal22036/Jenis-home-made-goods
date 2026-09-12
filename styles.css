@@ -110,6 +110,14 @@ button {
   box-shadow: var(--shadow);
 }
 
+.date-panel {
+  margin: 0 0 22px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
 h2,
 h3 {
   margin-top: 0;

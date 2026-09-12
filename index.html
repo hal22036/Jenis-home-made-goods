@@ -25,26 +25,10 @@
   </header>
 
   <main class="wrap">
-    <section class="panel" id="date-section" aria-labelledby="dates-heading">
-      <p class="order-cutoff-notice">
-        <span>Orders close Wednesday at 5:00 PM Pacific</span>
-        <span>for that week's Friday pickup.</span>
-      </p>
-
-      <div class="section-row menu-toolbar">
-        <div>
-          <p class="step">Step 1</p>
-          <h2 id="dates-heading">Choose a pickup date</h2>
-        </div>
-      </div>
-      <div id="date-list" class="date-grid"></div>
-      <p id="date-status" class="muted" role="status">Loading available dates...</p>
-    </section>
-
     <section class="panel" id="menu-section" aria-labelledby="menu-heading" hidden>
       <div class="section-row">
         <div>
-          <p class="step">Step 2</p>
+          <p class="step">Shop</p>
           <h2 id="menu-heading">Choose your items</h2>
           <p id="capacity-message" class="muted"></p>
         </div>
@@ -54,6 +38,21 @@
       </div>
 
       <div class="product-tabs" id="product-tabs" aria-label="Product sections"></div>
+      <section class="date-panel" id="date-section" aria-labelledby="dates-heading">
+        <p class="order-cutoff-notice">
+          <span>Orders close Wednesday at 5:00 PM Pacific</span>
+          <span>for that week's Friday pickup.</span>
+        </p>
+
+        <div class="section-row menu-toolbar">
+          <div>
+            <p class="step">Baked goods pickup</p>
+            <h2 id="dates-heading">Choose a pickup date</h2>
+          </div>
+        </div>
+        <div id="date-list" class="date-grid"></div>
+        <p id="date-status" class="muted" role="status">Loading available dates...</p>
+      </section>
       <div id="product-list" class="product-grid"></div>
 
       <div class="summary" aria-live="polite">
@@ -226,6 +225,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=20260912-streamlined-checkout"></script>
+  <script src="app.js?v=20260912-pickup-under-baked-tab"></script>
 </body>
 </html>
