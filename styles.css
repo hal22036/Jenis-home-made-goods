@@ -983,6 +983,7 @@ button[type="submit"]:disabled {
   color: #fff;
 }
 
+button.review-place-button,
 .review-place-button {
   width: 100%;
   display: inline-flex;
@@ -998,6 +999,7 @@ button[type="submit"]:disabled {
   cursor: pointer;
 }
 
+button.review-place-button:hover,
 .review-place-button:hover {
   background: #245238;
 }
