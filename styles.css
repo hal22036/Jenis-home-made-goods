@@ -1028,10 +1028,10 @@ button.review-place-button,
   min-height: 50px;
   align-items: center;
   justify-content: center;
-  border: 1px solid #18a957;
+  border: 1px solid #5ca66f;
   border-radius: 8px;
-  background: #22c55e;
-  color: #fff;
+  background: #bff2cc;
+  color: #111;
   padding: 13px 16px;
   font-weight: 800;
   cursor: pointer;
@@ -1039,7 +1039,7 @@ button.review-place-button,
 
 button.review-place-button:hover,
 .review-place-button:hover {
-  background: #16a34a;
+  background: #9be7b0;
 }
 
 .success-actions {
