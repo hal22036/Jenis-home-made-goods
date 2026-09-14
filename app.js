@@ -1178,6 +1178,7 @@ function renderProductCard(products) {
 }
 
 function isQuantityButtonDisabled(action, product) {
+  if (action === "remove") return false;
   if (action === "minus") return state.quantities[product.id] === 0;
   if (productTracksInventory(product) && selectedInventoryQuantity(product) >= inventoryQuantityFor(product)) return true;
   if (capacityUnitsFor(product) > 0 && !state.selectedDate) return true;
@@ -1195,7 +1196,10 @@ function updateProductQuantity(action, product) {
     resetCoupon("Coupon removed because the order changed. Apply it again before checkout.");
   }
 
-  if (action === "minus") {
+  if (action === "remove") {
+    state.quantities[product.id] = 0;
+    setMessage(`${displayNameFor(product)} removed from your cart.`);
+  } else if (action === "minus") {
     if (state.quantities[product.id] > 0) {
       state.quantities[product.id]--;
     }
@@ -1406,12 +1410,22 @@ function renderCheckoutReview() {
     ` : ""}
     <div class="invoice-items">
       ${items.map(item => `
-        <div>
+        <div class="checkout-review-item">
           <span class="invoice-item-name">
             ${invoiceItemImageMarkup(item)}
             <span class="invoice-item-text">${item.quantity}x ${item.name} ${itemFulfillmentBadge(details, item)}</span>
           </span>
-          <span>${money(item.quantity * item.price_cents)}</span>
+          <div class="checkout-review-controls">
+            <div class="quantity" aria-label="${escapeAttribute(item.name)} checkout quantity">
+              <button type="button" data-review-action="minus" data-product-id="${item.product_id}" aria-label="Remove one ${escapeAttribute(item.name)}">-</button>
+              <span data-qty="${item.product_id}">${item.quantity}</span>
+              <button type="button" data-review-action="plus" data-product-id="${item.product_id}" aria-label="Add one ${escapeAttribute(item.name)}">+</button>
+            </div>
+            <strong>${money(item.quantity * item.price_cents)}</strong>
+            <button class="remove-cart-item" type="button" data-review-action="remove" data-product-id="${item.product_id}">
+              Remove
+            </button>
+          </div>
         </div>
       `).join("")}
     </div>
@@ -1447,6 +1461,14 @@ function renderCheckoutReview() {
       </div>
     </div>
   `;
+
+  el.reviewContent.querySelectorAll("[data-review-action]").forEach(button => {
+    const product = state.products.find(item => item.id === button.dataset.productId);
+    if (!product) return;
+
+    button.disabled = isQuantityButtonDisabled(button.dataset.reviewAction, product);
+    button.addEventListener("click", () => updateProductQuantity(button.dataset.reviewAction, product));
+  });
 }
 
 el.editOrder?.addEventListener("click", () => {
