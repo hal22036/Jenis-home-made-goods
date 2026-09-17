@@ -808,7 +808,7 @@ function syncPageFlow() {
   el.dateSection.hidden = !showPickupDates;
   el.menuSection.hidden = false;
   el.customerSection.hidden = false;
-  renderCheckoutReview();
+  safelyRenderCheckoutReview();
 }
 
 function refreshCheckoutReview() {
@@ -1278,7 +1278,7 @@ function updateProductQuantity(action, product) {
   renderProducts();
   syncPageFlow();
   updateShippingFields();
-  refreshCheckoutReview();
+  safelyRenderCheckoutReview();
 }
 
 function updateSummary() {
@@ -1395,12 +1395,18 @@ el.form.addEventListener("submit", async event => {
 });
 
 function selectedItemsWithDetails() {
-  return state.products
-    .filter(product => (state.quantities[product.id] || 0) > 0)
-    .map(product => ({
+  const productsById = new Map(state.products.map(product => [String(product.id), product]));
+
+  return Object.entries(state.quantities)
+    .map(([productId, quantity]) => ({
+      product: productsById.get(String(productId)),
+      quantity: Number(quantity || 0)
+    }))
+    .filter(({ product, quantity }) => product && quantity > 0)
+    .map(({ product, quantity }) => ({
       product_id: product.id,
       name: displayNameFor(product),
-      quantity: state.quantities[product.id],
+      quantity,
       item_note: itemNoteFor(product.id),
       price_cents: product.price_cents,
       capacity_units: capacityUnitsFor(product),
@@ -1561,13 +1567,11 @@ async function submitReviewedOrder() {
     return;
   }
 
-  const items = state.products
-    .filter(product => (state.quantities[product.id] || 0) > 0)
-    .map(product => ({
-      product_id: product.id,
-      quantity: state.quantities[product.id],
-      item_note: itemNoteFor(product.id)
-    }));
+  const items = selectedItemsWithDetails().map(item => ({
+    product_id: item.product_id,
+    quantity: item.quantity,
+    item_note: item.item_note
+  }));
 
   state.isSubmitting = true;
   el.submit.disabled = true;
