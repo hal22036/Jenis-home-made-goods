@@ -9,7 +9,7 @@
   />
   <title>Jeni's Home Made Goods Orders</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-  <link rel="stylesheet" href="styles.css?v=20260917-adjustments-row" />
+  <link rel="stylesheet" href="styles.css?v=20260917-soft-checkout-note" />
 </head>
 <body>
   <header class="site-header">
@@ -66,7 +66,7 @@
 
     <section class="panel" id="customer-section" aria-labelledby="customer-heading" hidden>
       <form id="order-form">
-        <p class="checkout-note"><strong>Review your invoice below, then enter your information and press the green Place order button.</strong></p>
+        <p class="checkout-note">Review your invoice, then enter your information to place your order.</p>
         <p class="step">Review order</p>
         <h2 id="customer-heading">Invoice summary</h2>
         <div id="review-content"></div>
@@ -89,7 +89,7 @@
               Optional tip
               <input id="tip-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />
             </label>
-            <p class="hint">Tips are never expected, but always appreciated.</p>
+            <p class="hint">Tips are never expected, but always appreciated. This updates your total automatically.</p>
           </div>
         </div>
 
