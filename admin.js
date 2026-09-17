@@ -132,6 +132,10 @@ function money(cents) {
   }).format(cents / 100);
 }
 
+function compareText(a = "", b = "") {
+  return String(a).localeCompare(String(b), undefined, { sensitivity: "base" });
+}
+
 function prettyDate(dateString) {
   if (!dateString) return "No date set";
 
