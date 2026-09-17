@@ -469,13 +469,19 @@ function addManualItemRow(item = {}) {
 function manualProductOptions(selectedProductId) {
   return state.products
     .filter(product => product.active || product.id === selectedProductId)
+    .slice()
+    .sort((a, b) => compareText(manualProductLabel(a), manualProductLabel(b)))
     .map(product => {
-      const label = product.display_group && product.option_label
-        ? `${product.display_group} - ${product.option_label}`
-        : product.name;
+      const label = manualProductLabel(product);
       return `<option value="${product.id}" ${product.id === selectedProductId ? "selected" : ""}>${escapeHtml(label)}</option>`;
     })
     .join("");
+}
+
+function manualProductLabel(product) {
+  return product.display_group && product.option_label
+    ? `${product.display_group} - ${product.option_label}`
+    : product.name;
 }
 
 function refreshManualProductSelects() {
@@ -960,12 +966,7 @@ function printOrderLabels(event) {
     return;
   }
 
-  if (!orderId) {
-    openLabelReview(labels, `${batchLabel} labels for ${prettyDate(pickupDate)}`);
-    return;
-  }
-
-  printLabels(labels);
+  openLabelReview(labels, `${batchLabel} labels for ${prettyDate(pickupDate)}`);
 }
 
 function openLabelReview(labels, title) {
@@ -979,6 +980,10 @@ function openLabelReview(labels, title) {
         ${escapeHtml(label.itemName)}
         <small>${escapeHtml(label.paymentMethod)} - ${prettyDate(label.pickupDate)}</small>
       </span>
+      <label class="label-note-field">
+        Label note
+        <input type="text" data-label-note-index="${index}" placeholder="Optional note, e.g. No coconut" maxlength="48" />
+      </label>
     </label>
   `).join("");
   el.labelReviewModal.hidden = false;
@@ -1002,7 +1007,14 @@ function setLabelReviewChecked(checked) {
 
 function selectedReviewLabels() {
   return [...el.labelReviewList.querySelectorAll("[data-label-index]:checked")]
-    .map(input => state.pendingPrintLabels[Number(input.dataset.labelIndex)])
+    .map(input => {
+      const index = Number(input.dataset.labelIndex);
+      const noteInput = el.labelReviewList.querySelector(`[data-label-note-index="${index}"]`);
+      return {
+        ...state.pendingPrintLabels[index],
+        note: noteInput?.value?.trim() || ""
+      };
+    })
     .filter(Boolean);
 }
 
@@ -1042,6 +1054,7 @@ function printLabels(labels) {
       <strong class="dymo-label-customer">${escapeHtml(label.customerName)}</strong>
       <span class="dymo-label-item ${itemSizeClass}">${escapeHtml(itemName)}</span>
       <span class="dymo-label-details">${escapeHtml(label.paymentMethod)} - ${prettyDate(label.pickupDate)}</span>
+      ${label.note ? `<em>${escapeHtml(label.note)}</em>` : ""}
     </section>
   `;
   }).join("");
