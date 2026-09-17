@@ -143,11 +143,16 @@ function money(cents) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD"
-  }).format(cents / 100);
+  }).format(Number(cents || 0) / 100);
 }
 
 function prettyDate(dateString) {
+  if (!dateString) return "Date to be confirmed";
+
   const [year, month, day] = dateString.split("-").map(Number);
+
+  if (!year || !month || !day) return String(dateString);
+
   return new Date(year, month - 1, day).toLocaleDateString("en-US", {
     weekday: "long",
     month: "short",
@@ -233,7 +238,7 @@ function isPlaceholder(value) {
 }
 
 function selectedQuantity() {
-  return Object.values(state.quantities).reduce((sum, qty) => sum + qty, 0);
+  return Object.values(state.quantities).reduce((sum, qty) => sum + Number(qty || 0), 0);
 }
 
 function capacityUnitsFor(product) {
@@ -260,20 +265,20 @@ function productHasInventory(product) {
 
 function selectedCapacityUnits() {
   return state.products.reduce((sum, product) => {
-    return sum + (state.quantities[product.id] || 0) * capacityUnitsFor(product);
+    return sum + Number(state.quantities[product.id] || 0) * capacityUnitsFor(product);
   }, 0);
 }
 
 function selectedTotalCents() {
   return state.products.reduce((sum, product) => {
-    return sum + (state.quantities[product.id] || 0) * product.price_cents;
+    return sum + Number(state.quantities[product.id] || 0) * Number(product.price_cents || 0);
   }, 0);
 }
 
 function bathBombQuantity() {
   return state.products.reduce((sum, product) => {
     if (cleanText(product.display_group).toLowerCase() !== "bath bombs") return sum;
-    return sum + (state.quantities[product.id] || 0);
+    return sum + Number(state.quantities[product.id] || 0);
   }, 0);
 }
 
@@ -324,7 +329,7 @@ function discountedSubtotalCents() {
 function selectedSubtotalByTaxCategory(taxCategory) {
   return state.products.reduce((sum, product) => {
     if ((product.tax_category || "home_bakery") !== taxCategory) return sum;
-    return sum + (state.quantities[product.id] || 0) * product.price_cents;
+    return sum + Number(state.quantities[product.id] || 0) * Number(product.price_cents || 0);
   }, 0);
 }
 
@@ -567,7 +572,7 @@ function invoiceItemImageMarkup(item) {
 }
 
 function itemSubtotalCents(product) {
-  return (state.quantities[product.id] || 0) * product.price_cents;
+  return Number(state.quantities[product.id] || 0) * Number(product.price_cents || 0);
 }
 
 function cardSubtotalCents(products) {
@@ -936,7 +941,7 @@ function safelyRenderCheckoutReview() {
     renderCheckoutReview();
   } catch (error) {
     console.error(error);
-    el.reviewContent.innerHTML = "<p class=\"message error\">Could not update the invoice summary. Please refresh and try again.</p>";
+    el.reviewContent.innerHTML = `<p class="message error">Could not update the invoice summary: ${escapeHtml(error.message || "Please refresh and try again.")}</p>`;
   }
 }
 
@@ -1538,15 +1543,15 @@ function selectedItemsWithDetails() {
   return Object.entries(state.quantities)
     .map(([productId, quantity]) => ({
       product: productsById.get(String(productId)),
-      quantity: Number(quantity || 0)
+      quantity: Math.max(Number(quantity || 0), 0)
     }))
     .filter(({ product, quantity }) => product && quantity > 0)
     .map(({ product, quantity }) => ({
       product_id: product.id,
-      name: displayNameFor(product),
+      name: displayNameFor(product) || "Order item",
       quantity,
       item_note: itemNoteFor(product.id),
-      price_cents: product.price_cents,
+      price_cents: Number(product.price_cents || 0),
       capacity_units: capacityUnitsFor(product),
       image_url: cleanText(product.image_url),
       shippable: productIsShippable(product),
