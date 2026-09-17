@@ -1660,7 +1660,7 @@ function renderCheckoutReview() {
             <span>-${money(discountCents())}</span>
           </div>
         ` : ""}
-        <div><span>Tax</span><span>${totals ? money(totals.tax_cents) : "Calculated at checkout"}</span></div>
+        <div><span>Tax</span><span>${totals ? money(totals.tax_cents) : "Updates before order is placed"}</span></div>
         ${totals?.shipping_cents ? `
           <div><span>Shipping</span><span>${money(totals.shipping_cents)}</span></div>
         ` : ""}
