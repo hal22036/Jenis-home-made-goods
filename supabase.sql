@@ -569,6 +569,7 @@ drop function if exists public.place_order(uuid,text,text,text,text,text,jsonb);
 drop function if exists public.place_order(uuid,text,text,text,text,text,boolean,jsonb);
 drop function if exists public.place_order(uuid,text,text,text,text,text,boolean,text,jsonb);
 drop function if exists public.place_order(uuid,text,text,text,text,text,boolean,text,text,text,jsonb);
+drop function if exists public.place_order(uuid,text,text,text,text,text,boolean,text,text,text,integer,jsonb);
 drop function if exists public.validate_coupon_code(text,integer);
 drop function if exists public.validate_coupon_code(text,integer,text);
 drop function if exists public.calculate_order_totals(integer,integer,text);
@@ -887,6 +888,7 @@ create or replace function public.place_order(
   p_coupon_code text,
   p_fulfillment_method text,
   p_shipping_address text,
+  p_tip_cents integer,
   p_items jsonb
 )
 returns table(order_id uuid, order_code text, total_cents integer)
@@ -920,6 +922,7 @@ declare
   v_totals record;
   v_fulfillment_method text;
   v_shipping_address text;
+  v_tip integer;
 begin
   if p_payment_method not in ('Venmo', 'Zelle', 'PayPal', 'CashApp', 'CashAtPickup') then
     raise exception 'Invalid payment method';
@@ -945,6 +948,7 @@ begin
 
   v_fulfillment_method := lower(trim(coalesce(p_fulfillment_method, 'pickup')));
   v_shipping_address := nullif(trim(coalesce(p_shipping_address, '')), '');
+  v_tip := greatest(coalesce(p_tip_cents, 0), 0);
 
   if v_fulfillment_method not in ('pickup', 'shipping') then
     raise exception 'Invalid fulfillment method';
@@ -1084,6 +1088,7 @@ begin
     coupon_applies_to,
     subtotal_cents,
     discount_cents,
+    tip_cents,
     tax_cents,
     shipping_cents,
     total_cents,
@@ -1103,9 +1108,10 @@ begin
     v_coupon_applies_to,
     v_total,
     v_discount,
+    v_tip,
     v_totals.tax_cents,
     v_totals.shipping_cents,
-    v_totals.final_total_cents,
+    v_totals.final_total_cents + v_tip,
     v_requested,
     v_fulfillment_method,
     case when v_fulfillment_method = 'shipping' then v_shipping_address else null end
@@ -1144,7 +1150,7 @@ begin
     );
   end loop;
 
-  return query select v_order_id, v_order_code, v_totals.final_total_cents;
+  return query select v_order_id, v_order_code, v_totals.final_total_cents + v_tip;
 end;
 $$;
 
@@ -2569,8 +2575,8 @@ begin
 end;
 $$;
 
-revoke all on function public.place_order(uuid,text,text,text,text,text,boolean,text,text,text,jsonb) from public;
-grant execute on function public.place_order(uuid,text,text,text,text,text,boolean,text,text,text,jsonb) to anon, authenticated;
+revoke all on function public.place_order(uuid,text,text,text,text,text,boolean,text,text,text,integer,jsonb) from public;
+grant execute on function public.place_order(uuid,text,text,text,text,text,boolean,text,text,text,integer,jsonb) to anon, authenticated;
 
 revoke all on function public.validate_coupon_code(text,integer,text) from public;
 grant execute on function public.validate_coupon_code(text,integer,text) to anon, authenticated;

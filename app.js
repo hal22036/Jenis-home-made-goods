@@ -117,6 +117,7 @@ const el = {
   couponMessage: document.querySelector("#coupon-message"),
   applyCoupon: document.querySelector("#apply-coupon"),
   removeCoupon: document.querySelector("#remove-coupon"),
+  tipAmount: document.querySelector("#tip-amount"),
   submit: document.querySelector("#submit-order"),
   reviewSection: document.querySelector("#review-section"),
   reviewContent: document.querySelector("#review-content"),
@@ -301,9 +302,13 @@ function totalDiscountCents() {
   return discountCents() + bathBombBundleDiscountCents();
 }
 
+function tipCents() {
+  return Math.max(dollarsToCents(el.tipAmount?.value || 0), 0);
+}
+
 function finalTotalCents() {
-  if (state.orderTotals) return state.orderTotals.final_total_cents;
-  return Math.max(selectedTotalCents() - totalDiscountCents(), 0);
+  if (state.orderTotals) return state.orderTotals.final_total_cents + tipCents();
+  return Math.max(selectedTotalCents() - totalDiscountCents(), 0) + tipCents();
 }
 
 function discountedSubtotalCents() {
@@ -1271,6 +1276,10 @@ el.removeCoupon.addEventListener("click", () => {
   renderCheckoutReview();
 });
 
+el.tipAmount.addEventListener("input", () => {
+  refreshCheckoutReview();
+});
+
 el.imageViewerClose?.addEventListener("click", closeImageViewer);
 
 el.imageViewer?.addEventListener("click", event => {
@@ -1457,6 +1466,7 @@ function renderCheckoutReview() {
         ${totals?.shipping_cents ? `
           <div><span>Shipping</span><span>${money(totals.shipping_cents)}</span></div>
         ` : ""}
+        ${tipCents() ? `<div><span>Tip</span><span>${money(tipCents())}</span></div>` : ""}
         <div><strong>${totals ? "Total" : "Current total"}</strong><strong>${money(finalTotalCents())}</strong></div>
       </div>
     </div>
@@ -1538,6 +1548,7 @@ async function submitReviewedOrder() {
     p_coupon_code: state.coupon?.code || null,
     p_fulfillment_method: details.fulfillmentMethod,
     p_shipping_address: details.fulfillmentMethod === "shipping" ? details.shippingAddress : null,
+    p_tip_cents: tipCents(),
     p_items: items
   });
 
@@ -1606,8 +1617,9 @@ function showSuccess(result, paymentMethod, invoiceRequested, items, details, co
       <div><dt>${orderTimingLabel(details, items)}</dt><dd>${orderTimingValue(details, items)}</dd></div>
       <div><dt>Order number</dt><dd>${result.order_code}</dd></div>
       <div><dt>Total</dt><dd>${money(result.total_cents)}</dd></div>
-      ${coupon ? `<div><dt>Coupon</dt><dd>${coupon.code} (${couponAppliesToLabel(coupon.applies_to)}) -${money(coupon.discount_cents)}</dd></div>` : ""}
-      <div><dt>Payment</dt><dd data-payment-label></dd></div>
+        ${coupon ? `<div><dt>Coupon</dt><dd>${coupon.code} (${couponAppliesToLabel(coupon.applies_to)}) -${money(coupon.discount_cents)}</dd></div>` : ""}
+        ${tipCents() ? `<div><dt>Tip</dt><dd>${money(tipCents())}</dd></div>` : ""}
+        <div><dt>Payment</dt><dd data-payment-label></dd></div>
       <div><dt>Method</dt><dd>${fulfillmentSummary(details, items)}</dd></div>
       <div><dt>Receipt email</dt><dd>${invoiceRequested ? "Requested" : "Not requested"}</dd></div>
       ${invoiceRequested ? `<div><dt>Email</dt><dd>${details.email}</dd></div>` : ""}
@@ -1671,6 +1683,7 @@ function showSuccess(result, paymentMethod, invoiceRequested, items, details, co
         ${coupon ? `<div class="discount-line"><span>Coupon ${coupon.code} (${couponAppliesToLabel(coupon.applies_to)})</span><span>-${money(coupon.discount_cents)}</span></div>` : ""}
         <div><span>Tax</span><span>${money(totals?.tax_cents || 0)}</span></div>
         ${totals?.shipping_cents ? `<div><span>Shipping</span><span>${money(totals.shipping_cents)}</span></div>` : ""}
+        ${tipCents() ? `<div><span>Tip</span><span>${money(tipCents())}</span></div>` : ""}
         <div><strong>Total</strong><strong>${money(result.total_cents)}</strong></div>
       </div>
     </div>
@@ -1696,6 +1709,7 @@ function showSuccess(result, paymentMethod, invoiceRequested, items, details, co
   updateInvoiceEmailField();
   resetCoupon();
   el.couponCode.value = "";
+  el.tipAmount.value = "";
   state.quantities = {};
   updateShippingFields();
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1708,6 +1722,7 @@ async function startAnotherOrder() {
   state.orderTotals = null;
   resetCoupon();
   el.couponCode.value = "";
+  el.tipAmount.value = "";
 
   el.successSection.hidden = true;
   el.dateSection.hidden = false;

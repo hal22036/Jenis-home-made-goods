@@ -9,7 +9,7 @@
   />
   <title>Jeni's Home Made Goods Orders</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-  <link rel="stylesheet" href="styles.css?v=20260914-light-green-place-order" />
+  <link rel="stylesheet" href="styles.css?v=20260917-custom-tip" />
 </head>
 <body>
   <header class="site-header">
@@ -81,6 +81,14 @@
             <button class="secondary-button compact-button" type="button" id="remove-coupon" hidden>Remove</button>
           </div>
           <p id="coupon-message" class="message" role="status"></p>
+        </div>
+
+        <div class="tip-box">
+          <label>
+            Optional tip
+            <input id="tip-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />
+          </label>
+          <p class="hint">Tips are never expected, but always appreciated.</p>
         </div>
 
         <div class="satisfaction-notice" role="note">
@@ -228,6 +236,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=20260914-review-cart-edit"></script>
+  <script src="app.js?v=20260917-custom-tip"></script>
 </body>
 </html>
