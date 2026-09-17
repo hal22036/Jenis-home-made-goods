@@ -146,6 +146,10 @@ function money(cents) {
   }).format(Number(cents || 0) / 100);
 }
 
+function dollarsToCents(value) {
+  return Math.round(Number(value || 0) * 100);
+}
+
 function prettyDate(dateString) {
   if (!dateString) return "Date to be confirmed";
 
