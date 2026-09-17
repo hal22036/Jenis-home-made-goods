@@ -966,7 +966,10 @@ function printOrderLabels(event) {
     return;
   }
 
-  openLabelReview(labels, `${batchLabel} labels for ${prettyDate(pickupDate)}`);
+  openLabelReview(
+    labels,
+    orderId ? `${batchLabel} labels for selected order` : `${batchLabel} labels for ${prettyDate(pickupDate)}`
+  );
 }
 
 function openLabelReview(labels, title) {
@@ -982,7 +985,12 @@ function openLabelReview(labels, title) {
       </span>
       <label class="label-note-field">
         Label note
-        <input type="text" data-label-note-index="${index}" placeholder="Optional note, e.g. No coconut" maxlength="48" />
+        <input
+          type="text"
+          data-label-note-index="${index}"
+          placeholder="Optional note, e.g. No coconut"
+          maxlength="48"
+        />
       </label>
     </label>
   `).join("");
@@ -1009,11 +1017,9 @@ function selectedReviewLabels() {
   return [...el.labelReviewList.querySelectorAll("[data-label-index]:checked")]
     .map(input => {
       const index = Number(input.dataset.labelIndex);
-      const noteInput = el.labelReviewList.querySelector(`[data-label-note-index="${index}"]`);
-      return {
-        ...state.pendingPrintLabels[index],
-        note: noteInput?.value?.trim() || ""
-      };
+      const label = state.pendingPrintLabels[index];
+      const note = el.labelReviewList.querySelector(`[data-label-note-index="${index}"]`)?.value.trim() || "";
+      return label ? { ...label, note } : null;
     })
     .filter(Boolean);
 }

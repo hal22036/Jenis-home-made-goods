@@ -315,6 +315,7 @@
 }
 
 .dymo-label-customer,
+.dymo-label em,
 .dymo-label-details {
   display: block;
   overflow: hidden;
@@ -351,6 +352,13 @@
 .dymo-label-details {
   font-size: 7.5pt;
   font-weight: 700;
+  line-height: 0.98;
+}
+
+.dymo-label em {
+  font-size: 7.2pt;
+  font-style: normal;
+  font-weight: 800;
   line-height: 0.98;
 }
 
@@ -406,7 +414,7 @@
 
 .label-review-item {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
@@ -428,6 +436,24 @@
 .label-review-item small {
   color: var(--muted);
   font-weight: 700;
+}
+
+.label-note-field {
+  grid-column: 2;
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.label-note-field input {
+  width: 100%;
+  height: auto;
+  min-height: 38px;
+  padding: 8px 10px;
+  font-size: 0.95rem;
 }
 
 .archive-date-button {
@@ -1016,7 +1042,6 @@
     box-shadow: none;
     border: 0;
   }
-
   body.printing-labels .dymo-label:not(:last-child) {
     page-break-after: always;
     break-after: page;
