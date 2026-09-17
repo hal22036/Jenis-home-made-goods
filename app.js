@@ -75,6 +75,7 @@ const STORE_SETTINGS = {
 };
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const ORDER_DRAFT_KEY = "jenisOrderDraftV1";
 
 const state = {
   dates: [],
@@ -758,6 +759,119 @@ function firstMissingShippingField() {
   return shippingAddressFields().find(field => !cleanText(field.value));
 }
 
+function saveOrderDraft() {
+  if (state.isSubmitting) return;
+
+  const paymentMethod = document.querySelector('input[name="payment"]:checked')?.value || "";
+  const fulfillmentMethodValue = fulfillmentMethod();
+  const draft = {
+    selectedDateId: state.selectedDate?.id || null,
+    activeProductTab: state.activeProductTab,
+    quantities: state.quantities,
+    itemNotes: state.itemNotes,
+    customerName: document.querySelector("#customer-name").value,
+    customerPhone: el.customerPhone.value,
+    customerNotes: document.querySelector("#customer-notes").value,
+    paymentMethod,
+    fulfillmentMethod: fulfillmentMethodValue,
+    shippingStreet: el.shippingStreet.value,
+    shippingCity: el.shippingCity.value,
+    shippingState: el.shippingState.value,
+    shippingZip: el.shippingZip.value,
+    couponCode: el.couponCode.value,
+    tipAmount: el.tipAmount.value,
+    invoiceRequested: el.invoiceRequested.checked,
+    invoiceEmail: el.invoiceEmail.value,
+    savedAt: new Date().toISOString()
+  };
+
+  try {
+    localStorage.setItem(ORDER_DRAFT_KEY, JSON.stringify(draft));
+  } catch (error) {
+    console.warn("Could not save order draft", error);
+  }
+}
+
+function clearOrderDraft() {
+  try {
+    localStorage.removeItem(ORDER_DRAFT_KEY);
+  } catch (error) {
+    console.warn("Could not clear order draft", error);
+  }
+}
+
+function restoreOrderDraft() {
+  let draft = null;
+
+  try {
+    draft = JSON.parse(localStorage.getItem(ORDER_DRAFT_KEY) || "null");
+  } catch (error) {
+    console.warn("Could not read order draft", error);
+    clearOrderDraft();
+    return;
+  }
+
+  if (!draft) return;
+
+  const productIds = new Set(state.products.map(product => String(product.id)));
+  const restoredQuantities = {};
+  Object.entries(draft.quantities || {}).forEach(([productId, quantity]) => {
+    const cleanQuantity = Math.max(Number(quantity || 0), 0);
+    if (productIds.has(String(productId)) && cleanQuantity > 0) {
+      restoredQuantities[productId] = cleanQuantity;
+    }
+  });
+
+  state.quantities = restoredQuantities;
+  state.itemNotes = {};
+  Object.entries(draft.itemNotes || {}).forEach(([productId, note]) => {
+    if (restoredQuantities[productId] && cleanText(note)) {
+      state.itemNotes[productId] = note;
+    }
+  });
+
+  if (draft.selectedDateId) {
+    state.selectedDate = state.dates.find(date => date.id === draft.selectedDateId) || null;
+  }
+
+  if (STORE_SETTINGS.productTabs.some(tab => tab.id === draft.activeProductTab)) {
+    state.activeProductTab = draft.activeProductTab;
+  }
+
+  document.querySelector("#customer-name").value = draft.customerName || "";
+  el.customerPhone.value = draft.customerPhone || "";
+  document.querySelector("#customer-notes").value = draft.customerNotes || "";
+  el.couponCode.value = draft.couponCode || "";
+  el.tipAmount.value = draft.tipAmount || "";
+  el.invoiceRequested.checked = Boolean(draft.invoiceRequested);
+  el.invoiceEmail.value = draft.invoiceEmail || "";
+  updateInvoiceEmailField();
+
+  const paymentInput = [...document.querySelectorAll('input[name="payment"]')]
+    .find(input => input.value === draft.paymentMethod);
+  if (paymentInput) paymentInput.checked = true;
+
+  const fulfillmentInput = [...document.querySelectorAll('input[name="fulfillment"]')]
+    .find(input => input.value === draft.fulfillmentMethod);
+  if (fulfillmentInput) fulfillmentInput.checked = true;
+
+  el.shippingStreet.value = draft.shippingStreet || "";
+  el.shippingCity.value = draft.shippingCity || "";
+  el.shippingState.value = draft.shippingState || "";
+  el.shippingZip.value = draft.shippingZip || "";
+
+  state.coupon = null;
+  state.orderTotals = null;
+  renderDates();
+  renderProducts();
+  updateShippingFields();
+  syncPageFlow();
+
+  if (draft.couponCode) {
+    setCouponMessage("Coupon restored. Tap Update total before checkout.");
+  }
+}
+
 function updateShippingFields() {
   const nonShippableItems = selectedNonShippableItems();
   const canSelectShipping = shippingCanBeSelected();
@@ -948,6 +1062,7 @@ async function loadStore() {
   renderProducts();
   syncPageFlow();
   updateShippingFields();
+  restoreOrderDraft();
 }
 
 function renderDates() {
@@ -992,6 +1107,7 @@ function selectDate(dateId) {
   renderProducts();
   updateSummary();
   setMessage();
+  saveOrderDraft();
 }
 
 function renderProducts() {
@@ -1198,6 +1314,7 @@ function renderProductCard(products) {
   card.querySelectorAll("[data-item-note]").forEach(input => {
     input.addEventListener("input", () => {
       state.itemNotes[input.dataset.itemNote] = input.value;
+      saveOrderDraft();
       refreshCheckoutReview();
     });
   });
@@ -1278,6 +1395,7 @@ function updateProductQuantity(action, product) {
   renderProducts();
   syncPageFlow();
   updateShippingFields();
+  saveOrderDraft();
   safelyRenderCheckoutReview();
 }
 
@@ -1297,18 +1415,36 @@ function updateSummary() {
 el.customerPhone.addEventListener("input", syncPhoneFormat);
 el.customerPhone.addEventListener("blur", syncPhoneFormat);
 document.querySelectorAll('input[name="fulfillment"]').forEach(input => {
-  input.addEventListener("change", updateShippingFields);
+  input.addEventListener("change", () => {
+    updateShippingFields();
+    saveOrderDraft();
+  });
 });
 shippingAddressFields().forEach(field => {
   field.addEventListener("input", () => {
     state.orderTotals = null;
     refreshCheckoutReview();
+    saveOrderDraft();
   });
+});
+[
+  document.querySelector("#customer-name"),
+  el.customerPhone,
+  document.querySelector("#customer-notes"),
+  el.couponCode,
+  el.tipAmount,
+  el.invoiceEmail
+].forEach(field => {
+  field.addEventListener("input", saveOrderDraft);
+});
+document.querySelectorAll('input[name="payment"]').forEach(input => {
+  input.addEventListener("change", saveOrderDraft);
 });
 el.applyCoupon.addEventListener("click", async () => {
   const applied = await applyCouponCode();
   if (applied) {
     renderCheckoutReview();
+    saveOrderDraft();
   }
 });
 el.removeCoupon.addEventListener("click", () => {
@@ -1317,10 +1453,12 @@ el.removeCoupon.addEventListener("click", () => {
   setCouponMessage("Coupon removed.");
   updateSummary();
   renderCheckoutReview();
+  saveOrderDraft();
 });
 
 el.tipAmount.addEventListener("input", () => {
   refreshCheckoutReview();
+  saveOrderDraft();
 });
 
 el.imageViewerClose?.addEventListener("click", closeImageViewer);
@@ -1547,6 +1685,7 @@ el.confirmOrder?.addEventListener("click", submitReviewedOrder);
 el.invoiceRequested.addEventListener("change", () => {
   updateInvoiceEmailField();
   setMessage();
+  saveOrderDraft();
 });
 
 async function submitReviewedOrder() {
@@ -1620,6 +1759,7 @@ async function submitReviewedOrder() {
   }
 
   const result = Array.isArray(data) ? data[0] : data;
+  clearOrderDraft();
   showSuccess(result, details.paymentMethod, invoiceRequested, selectedItemsWithDetails(), details, state.coupon, state.orderTotals);
   await refreshSelectedDate();
 }
@@ -1763,6 +1903,7 @@ function showSuccess(result, paymentMethod, invoiceRequested, items, details, co
   el.tipAmount.value = "";
   state.quantities = {};
   state.itemNotes = {};
+  clearOrderDraft();
   updateShippingFields();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -1776,6 +1917,7 @@ async function startAnotherOrder() {
   resetCoupon();
   el.couponCode.value = "";
   el.tipAmount.value = "";
+  clearOrderDraft();
 
   el.successSection.hidden = true;
   el.dateSection.hidden = false;
