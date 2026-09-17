@@ -1621,6 +1621,7 @@ function renderCheckoutReview() {
             ${invoiceItemImageMarkup(item)}
             <span class="invoice-item-text">${item.quantity}x ${item.name} ${itemFulfillmentBadge(details, item)}</span>
           </span>
+          ${item.item_note ? `<p class="item-note-display invoice-item-note"><strong>Item note:</strong> ${escapeHtml(item.item_note)}</p>` : ""}
           <div class="checkout-review-controls">
             <div class="quantity" aria-label="${escapeAttribute(item.name)} checkout quantity">
               <button type="button" data-review-action="minus" data-product-id="${item.product_id}" aria-label="Remove one ${escapeAttribute(item.name)}">-</button>
@@ -1632,7 +1633,6 @@ function renderCheckoutReview() {
               Remove
             </button>
           </div>
-          ${item.item_note ? `<p class="item-note-display"><strong>Item note:</strong> ${escapeHtml(item.item_note)}</p>` : ""}
         </div>
       `).join("")}
     </div>
@@ -1857,13 +1857,13 @@ function showSuccess(result, paymentMethod, invoiceRequested, items, details, co
     </div>
     <div class="invoice-items">
       ${items.map(item => `
-        <div>
+        <div class="invoice-line-item">
           <span class="invoice-item-name">
             ${invoiceItemImageMarkup(item)}
             <span class="invoice-item-text">${item.quantity}x ${item.name} ${itemFulfillmentBadge(details, item)}</span>
           </span>
-          <span>${money(item.quantity * item.price_cents)}</span>
-          ${item.item_note ? `<p class="item-note-display"><strong>Item note:</strong> ${escapeHtml(item.item_note)}</p>` : ""}
+          ${item.item_note ? `<p class="item-note-display invoice-item-note"><strong>Item note:</strong> ${escapeHtml(item.item_note)}</p>` : ""}
+          <span class="invoice-line-total">${money(item.quantity * item.price_cents)}</span>
         </div>
       `).join("")}
     </div>
