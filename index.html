@@ -9,7 +9,7 @@
   />
   <title>Jeni's Home Made Goods Orders</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-  <link rel="stylesheet" href="styles.css?v=20260917-item-notes" />
+  <link rel="stylesheet" href="styles.css?v=20260917-adjustments-row" />
 </head>
 <body>
   <header class="site-header">
@@ -71,24 +71,26 @@
         <h2 id="customer-heading">Invoice summary</h2>
         <div id="review-content"></div>
 
-        <div class="coupon-box checkout-coupon-box">
-          <label>
-            Coupon code
-            <input id="coupon-code" autocomplete="off" autocapitalize="characters" placeholder="Optional" />
-          </label>
-          <div class="coupon-actions">
-            <button class="secondary-button compact-button" type="button" id="apply-coupon">Update total</button>
-            <button class="secondary-button compact-button" type="button" id="remove-coupon" hidden>Remove</button>
+        <div class="checkout-adjustments">
+          <div class="coupon-box checkout-coupon-box">
+            <label>
+              Coupon code
+              <input id="coupon-code" autocomplete="off" autocapitalize="characters" placeholder="Optional" />
+            </label>
+            <div class="coupon-actions">
+              <button class="secondary-button compact-button" type="button" id="apply-coupon">Update total</button>
+              <button class="secondary-button compact-button" type="button" id="remove-coupon" hidden>Remove</button>
+            </div>
+            <p id="coupon-message" class="message" role="status"></p>
           </div>
-          <p id="coupon-message" class="message" role="status"></p>
-        </div>
 
-        <div class="tip-box">
-          <label>
-            Optional tip
-            <input id="tip-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />
-          </label>
-          <p class="hint">Tips are never expected, but always appreciated.</p>
+          <div class="tip-box">
+            <label>
+              Optional tip
+              <input id="tip-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />
+            </label>
+            <p class="hint">Tips are never expected, but always appreciated.</p>
+          </div>
         </div>
 
         <div class="satisfaction-notice" role="note">
@@ -238,6 +240,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=20260917-item-notes"></script>
+  <script src="app.js?v=20260917-adjustments-row"></script>
 </body>
 </html>

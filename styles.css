@@ -729,8 +729,16 @@ legend {
   margin-top: 16px;
 }
 
+.checkout-adjustments {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.25fr) minmax(220px, 0.75fr);
+  align-items: start;
+  gap: 12px;
+  margin: 18px 0;
+}
+
 .coupon-box {
-  margin: 12px 0 18px;
+  margin: 0;
   padding: 14px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -738,11 +746,11 @@ legend {
 }
 
 .checkout-coupon-box {
-  margin-top: 18px;
+  margin-top: 0;
 }
 
 .tip-box {
-  margin: 0 0 18px;
+  margin: 0;
   padding: 14px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -1309,6 +1317,10 @@ button.review-place-button:hover,
   }
 
   .shipping-address-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .checkout-adjustments {
     grid-template-columns: 1fr;
   }
 

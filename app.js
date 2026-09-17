@@ -813,7 +813,16 @@ function syncPageFlow() {
 
 function refreshCheckoutReview() {
   if (!el.customerSection.hidden) {
+    safelyRenderCheckoutReview();
+  }
+}
+
+function safelyRenderCheckoutReview() {
+  try {
     renderCheckoutReview();
+  } catch (error) {
+    console.error(error);
+    el.reviewContent.innerHTML = "<p class=\"message error\">Could not update the invoice summary. Please refresh and try again.</p>";
   }
 }
 
@@ -1269,6 +1278,7 @@ function updateProductQuantity(action, product) {
   renderProducts();
   syncPageFlow();
   updateShippingFields();
+  refreshCheckoutReview();
 }
 
 function updateSummary() {
