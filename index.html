@@ -9,7 +9,7 @@
   />
   <title>Jeni's Home Made Goods Orders</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-  <link rel="stylesheet" href="styles.css?v=20260917-custom-tip" />
+  <link rel="stylesheet" href="styles.css?v=20260917-receipt-row" />
 </head>
 <body>
   <header class="site-header">
@@ -188,17 +188,19 @@
           <p class="hint">Credit cards are not accepted on this site.</p>
         </fieldset>
 
-        <div class="invoice-request">
-          <span>Email me a receipt?</span>
-          <label class="invoice-yes">
-            <span>Yes</span>
-            <input id="invoice-requested" type="checkbox" />
+        <div class="invoice-request-row">
+          <label class="invoice-request">
+            <span>Email me a receipt?</span>
+            <span class="invoice-yes">
+              <span>Yes</span>
+              <input id="invoice-requested" type="checkbox" />
+            </span>
+          </label>
+          <label class="invoice-email-field" id="invoice-email-field" hidden>
+            Email for receipt
+            <input id="invoice-email" type="email" autocomplete="email" />
           </label>
         </div>
-        <label class="invoice-email-field" id="invoice-email-field" hidden>
-          Email for receipt
-          <input id="invoice-email" type="email" autocomplete="email" />
-        </label>
 
         <p data-pickup-note class="pickup-note"></p>
         <p class="submit-reminder">

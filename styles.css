@@ -977,12 +977,21 @@ button[type="submit"]:disabled {
   color: #fff;
 }
 
+.invoice-request-row {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.8fr) minmax(260px, 1fr);
+  align-items: end;
+  gap: 12px;
+  margin: 18px 0;
+}
+
 .invoice-request {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin: 18px 0;
+  min-height: 72px;
+  margin: 0;
   padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -1006,11 +1015,15 @@ button[type="submit"]:disabled {
 }
 
 .invoice-email-field {
-  margin: -4px 0 18px;
+  margin: 0;
   padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: #fffdf9;
+}
+
+.invoice-email-field[hidden] {
+  display: none;
 }
 
 .review-actions {
@@ -1269,6 +1282,10 @@ button.review-place-button:hover,
   }
 
   .shipping-address-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .invoice-request-row {
     grid-template-columns: 1fr;
   }
 
