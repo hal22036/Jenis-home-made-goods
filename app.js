@@ -82,6 +82,7 @@ const state = {
   activeProductTab: "baked-goods",
   selectedDate: null,
   quantities: {},
+  itemNotes: {},
   coupon: null,
   orderTotals: null,
   lastOrder: null,
@@ -300,6 +301,10 @@ function discountCents() {
 
 function totalDiscountCents() {
   return discountCents() + bathBombBundleDiscountCents();
+}
+
+function itemNoteFor(productId) {
+  return cleanText(state.itemNotes[productId] || "");
 }
 
 function tipCents() {
@@ -1118,6 +1123,7 @@ function renderProductCard(products) {
           <button type="button" data-action="plus" data-product-id="${primaryProduct.id}" aria-label="Add one ${primaryProduct.name}">+</button>
         </div>
       </div>
+      ${state.quantities[primaryProduct.id] > 0 ? itemNoteMarkup(primaryProduct) : ""}
     `;
   } else {
     card.innerHTML = `
@@ -1157,6 +1163,7 @@ function renderProductCard(products) {
               <span class="option-price">${money(product.price_cents)}</span>
               <span class="option-subtotal">${money(itemSubtotalCents(product))}</span>
             </div>
+            ${state.quantities[product.id] > 0 ? itemNoteMarkup(product) : ""}
           </div>
         `).join("")}
       </div>
@@ -1179,7 +1186,29 @@ function renderProductCard(products) {
     });
   });
 
+  card.querySelectorAll("[data-item-note]").forEach(input => {
+    input.addEventListener("input", () => {
+      state.itemNotes[input.dataset.itemNote] = input.value;
+      refreshCheckoutReview();
+    });
+  });
+
   return card;
+}
+
+function itemNoteMarkup(product) {
+  return `
+    <label class="item-note-field">
+      Item note
+      <input
+        type="text"
+        data-item-note="${product.id}"
+        value="${escapeAttribute(itemNoteFor(product.id))}"
+        placeholder="Optional requests/notes"
+        maxlength="120"
+      />
+    </label>
+  `;
 }
 
 function isQuantityButtonDisabled(action, product) {
@@ -1203,10 +1232,14 @@ function updateProductQuantity(action, product) {
 
   if (action === "remove") {
     state.quantities[product.id] = 0;
+    delete state.itemNotes[product.id];
     setMessage(`${displayNameFor(product)} removed from your cart.`);
   } else if (action === "minus") {
     if (state.quantities[product.id] > 0) {
       state.quantities[product.id]--;
+    }
+    if (state.quantities[product.id] === 0) {
+      delete state.itemNotes[product.id];
     }
   } else {
     const remaining = remainingForSelectedDate();
@@ -1358,6 +1391,7 @@ function selectedItemsWithDetails() {
       product_id: product.id,
       name: displayNameFor(product),
       quantity: state.quantities[product.id],
+      item_note: itemNoteFor(product.id),
       price_cents: product.price_cents,
       capacity_units: capacityUnitsFor(product),
       image_url: cleanText(product.image_url),
@@ -1435,6 +1469,7 @@ function renderCheckoutReview() {
               Remove
             </button>
           </div>
+          ${item.item_note ? `<p class="item-note-display"><strong>Item note:</strong> ${escapeHtml(item.item_note)}</p>` : ""}
         </div>
       `).join("")}
     </div>
@@ -1520,7 +1555,8 @@ async function submitReviewedOrder() {
     .filter(product => (state.quantities[product.id] || 0) > 0)
     .map(product => ({
       product_id: product.id,
-      quantity: state.quantities[product.id]
+      quantity: state.quantities[product.id],
+      item_note: itemNoteFor(product.id)
     }));
 
   state.isSubmitting = true;
@@ -1664,6 +1700,7 @@ function showSuccess(result, paymentMethod, invoiceRequested, items, details, co
             <span class="invoice-item-text">${item.quantity}x ${item.name} ${itemFulfillmentBadge(details, item)}</span>
           </span>
           <span>${money(item.quantity * item.price_cents)}</span>
+          ${item.item_note ? `<p class="item-note-display"><strong>Item note:</strong> ${escapeHtml(item.item_note)}</p>` : ""}
         </div>
       `).join("")}
     </div>
@@ -1711,6 +1748,7 @@ function showSuccess(result, paymentMethod, invoiceRequested, items, details, co
   el.couponCode.value = "";
   el.tipAmount.value = "";
   state.quantities = {};
+  state.itemNotes = {};
   updateShippingFields();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -1719,6 +1757,7 @@ async function startAnotherOrder() {
   state.lastOrder = null;
   state.selectedDate = null;
   state.quantities = {};
+  state.itemNotes = {};
   state.orderTotals = null;
   resetCoupon();
   el.couponCode.value = "";

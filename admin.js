@@ -958,6 +958,7 @@ function orderLabelsFor(orders, batchType) {
           labels.push({
             customerName: order.customer_name,
             itemName: adminItemName(item),
+            note: item.item_note || "",
             paymentMethod: paymentLabel(order.payment_method),
             pickupDate: order.pickup_date
           });
@@ -1006,6 +1007,7 @@ function openLabelReview(labels, title) {
         <input
           type="text"
           data-label-note-index="${index}"
+          value="${escapeAttribute(label.note || "")}"
           placeholder="Optional note, e.g. No coconut"
           maxlength="48"
         />
@@ -1154,7 +1156,10 @@ function orderCardMarkup(order) {
       <div class="admin-items">
         ${(order.items || []).map(item => `
           <div>
-            <span>${item.quantity}x ${adminItemName(item)}</span>
+            <span>
+              ${item.quantity}x ${adminItemName(item)}
+              ${item.item_note ? `<small class="admin-item-note">Note: ${escapeHtml(item.item_note)}</small>` : ""}
+            </span>
             <span>${money(item.quantity * item.unit_price_cents)}</span>
           </div>
         `).join("")}
@@ -1315,6 +1320,10 @@ function orderItemEditRowMarkup(item = {}) {
         Loaf spots each
         <input data-order-item-loaf-spots type="number" min="0" step="1" value="${capacityUnits}" />
       </label>
+      <label class="order-item-note-field">
+        Item note
+        <input data-order-item-note value="${escapeAttribute(item.item_note || "")}" placeholder="Optional requests/notes" />
+      </label>
       <button class="secondary-button compact-button danger-button" type="button" data-remove-order-item>Remove</button>
     </div>
   `;
@@ -1392,6 +1401,7 @@ function orderItemsFromCard(card) {
         name: isOther ? row.querySelector("[data-order-item-name]").value.trim() : "",
         quantity,
         unit_price_cents: unitPriceCents,
+        item_note: row.querySelector("[data-order-item-note]").value.trim(),
         tax_category: isOther ? row.querySelector("[data-order-item-tax-category]").value : (product.tax_category || "home_bakery"),
         loaf_spots: quantity * loafSpotsEach
       };

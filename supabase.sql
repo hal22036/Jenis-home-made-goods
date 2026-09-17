@@ -92,6 +92,7 @@ create table if not exists public.order_items (
   custom_name text,
   custom_tax_category text not null default 'home_bakery' check (custom_tax_category in ('home_bakery','general_product')),
   custom_capacity_units integer not null default 0 check (custom_capacity_units >= 0),
+  item_note text,
   quantity integer not null check (quantity > 0),
   unit_price_cents integer not null check (unit_price_cents >= 0)
 );
@@ -215,6 +216,9 @@ add column if not exists custom_tax_category text not null default 'home_bakery'
 
 alter table public.order_items
 add column if not exists custom_capacity_units integer not null default 0;
+
+alter table public.order_items
+add column if not exists item_note text;
 
 alter table public.order_items
 drop constraint if exists order_items_custom_tax_category_check;
@@ -1139,12 +1143,14 @@ begin
     insert into order_items (
       order_id,
       product_id,
+      item_note,
       quantity,
       unit_price_cents
     )
     values (
       v_order_id,
       (v_item->>'product_id')::uuid,
+      nullif(trim(coalesce(v_item->>'item_note', '')), ''),
       (v_item->>'quantity')::integer,
       v_price
     );
@@ -1241,6 +1247,7 @@ begin
         jsonb_build_object(
           'name', coalesce(oi.custom_name, p.name),
           'quantity', oi.quantity,
+          'item_note', oi.item_note,
           'unit_price_cents', oi.unit_price_cents,
           'display_group', p.display_group,
           'option_label', p.option_label,
@@ -1342,6 +1349,7 @@ begin
               else p.name
             end,
           'quantity', oi.quantity,
+          'item_note', oi.item_note,
           'unit_price_cents', oi.unit_price_cents
         )
         order by coalesce(p.display_group, oi.custom_name, p.name), coalesce(p.option_label, oi.custom_name, p.name), p.name
@@ -1469,6 +1477,7 @@ begin
           'product_id', oi.product_id,
           'name', coalesce(oi.custom_name, p.name),
           'quantity', oi.quantity,
+          'item_note', oi.item_note,
           'unit_price_cents', oi.unit_price_cents,
           'tax_category', coalesce(p.tax_category, oi.custom_tax_category, 'home_bakery'),
           'capacity_units', coalesce(p.capacity_units, oi.custom_capacity_units, 0),
@@ -1792,6 +1801,7 @@ begin
       custom_name,
       custom_tax_category,
       custom_capacity_units,
+      item_note,
       quantity,
       unit_price_cents
     )
@@ -1805,6 +1815,7 @@ begin
           then (greatest(coalesce((v_item->>'loaf_spots')::integer, 0), 0) / greatest((v_item->>'quantity')::integer, 1))::integer
         else 0
       end,
+      nullif(trim(coalesce(v_item->>'item_note', '')), ''),
       (v_item->>'quantity')::integer,
       (v_item->>'unit_price_cents')::integer
     );
@@ -2084,6 +2095,7 @@ begin
       custom_name,
       custom_tax_category,
       custom_capacity_units,
+      item_note,
       quantity,
       unit_price_cents
     )
@@ -2097,6 +2109,7 @@ begin
           then (greatest(coalesce((v_item->>'loaf_spots')::integer, 0), 0) / greatest((v_item->>'quantity')::integer, 1))::integer
         else 0
       end,
+      nullif(trim(coalesce(v_item->>'item_note', '')), ''),
       (v_item->>'quantity')::integer,
       (v_item->>'unit_price_cents')::integer
     );

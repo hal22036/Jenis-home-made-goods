@@ -151,6 +151,7 @@ function renderInvoice(order) {
             <span class="invoice-item-text">${item.quantity}x ${escapeHtml(itemName(item))} ${itemFulfillmentBadge(order, item)}</span>
           </span>
           <span>${money(item.quantity * item.unit_price_cents)}</span>
+          ${item.item_note ? `<p class="item-note-display"><strong>Item note:</strong> ${escapeHtml(item.item_note)}</p>` : ""}
         </div>
       `).join("")}
     </div>
