@@ -133,7 +133,12 @@ function money(cents) {
 }
 
 function prettyDate(dateString) {
+  if (!dateString) return "No date set";
+
   const [year, month, day] = dateString.split("-").map(Number);
+
+  if (!year || !month || !day) return String(dateString);
+
   return new Date(year, month - 1, day).toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
@@ -199,6 +204,8 @@ function isActiveOrderDate(date) {
 }
 
 function prettyDateTime(value) {
+  if (!value) return "Not recorded";
+
   return new Date(value).toLocaleString("en-US", {
     month: "short",
     day: "numeric",
@@ -714,8 +721,15 @@ async function loadOrders() {
   }
 
   state.orders = data || [];
-  renderOrderFilters();
-  renderOrders();
+
+  try {
+    renderOrderFilters();
+    renderOrders();
+  } catch (renderError) {
+    console.error(renderError);
+    el.ordersList.innerHTML = "<p class=\"muted\">Orders could not be displayed. Check the message above for details.</p>";
+    setMessage(el.adminMessage, `Could not display orders: ${renderError.message}`, "error");
+  }
 }
 
 function renderOrderFilters() {
