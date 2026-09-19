@@ -820,6 +820,10 @@ function renderOrders() {
     button.addEventListener("click", saveOrderStatus);
   });
 
+  el.ordersList.querySelectorAll("[data-quick-status]").forEach(button => {
+    button.addEventListener("click", saveQuickOrderStatus);
+  });
+
   el.ordersList.querySelectorAll("[data-save-order-items]").forEach(button => {
     button.addEventListener("click", saveOrderItems);
   });
@@ -1130,6 +1134,24 @@ function orderCardMarkup(order) {
         <div class="order-summary-meta">
           <span>${paymentLabel(order.payment_method)} &middot; ${statusLabel(order.fulfillment_status)}</span>
           <strong>${money(order.total_cents)} &middot; ${statusLabel(order.payment_status)}</strong>
+          <div class="order-quick-actions" aria-label="Quick order actions">
+            <button
+              class="quick-status-button"
+              type="button"
+              data-quick-status="paid"
+              ${order.payment_status === "paid" ? "disabled" : ""}
+            >
+              Paid
+            </button>
+            <button
+              class="quick-status-button"
+              type="button"
+              data-quick-status="fulfilled"
+              ${order.fulfillment_status === "fulfilled" || order.fulfillment_status === "canceled" ? "disabled" : ""}
+            >
+              Fulfilled
+            </button>
+          </div>
         </div>
       </summary>
 
@@ -1521,6 +1543,24 @@ async function saveOrderStatus(event) {
 
   setMessage(message, "Saved.", "success");
   await Promise.all([loadOrders(), loadPickupDates()]);
+}
+
+async function saveQuickOrderStatus(event) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  const card = event.currentTarget.closest("[data-order-id]");
+  const action = event.currentTarget.dataset.quickStatus;
+
+  if (action === "paid") {
+    card.querySelector("[data-payment-status]").value = "paid";
+  }
+
+  if (action === "fulfilled") {
+    card.querySelector("[data-fulfillment-status]").value = "fulfilled";
+  }
+
+  await saveOrderStatus(event);
 }
 
 async function saveOrderItems(event) {
