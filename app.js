@@ -1120,6 +1120,7 @@ function selectDate(dateId) {
 }
 
 function renderProducts() {
+  el.productList.hidden = false;
   el.productList.innerHTML = "";
   renderProductTabs();
 
@@ -1129,7 +1130,7 @@ function renderProducts() {
   }
 
   if (state.activeProductTab === "baked-goods" && !state.selectedDate) {
-    el.productList.innerHTML = "<p class=\"muted\">Choose a Friday pickup date above to order baked goods.</p>";
+    el.productList.hidden = true;
     return;
   }
 
