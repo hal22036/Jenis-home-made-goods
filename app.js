@@ -1736,7 +1736,7 @@ async function submitReviewedOrder() {
     return;
   }
 
-  const { data, error } = await supabaseClient.rpc("place_order", {
+  const orderPayload = {
     p_pickup_date_id: effectiveOrderDate().id,
     p_customer_name: details.name,
     p_customer_email: invoiceRequested ? details.email : null,
@@ -1749,7 +1749,18 @@ async function submitReviewedOrder() {
     p_shipping_address: details.fulfillmentMethod === "shipping" ? details.shippingAddress : null,
     p_tip_cents: tipCents(),
     p_items: items
-  });
+  };
+
+  let { data, error } = await supabaseClient.rpc("place_order", orderPayload);
+
+  const databaseNeedsTipUpgrade =
+    error?.code === "PGRST202" && error.message?.includes("p_tip_cents");
+
+  if (databaseNeedsTipUpgrade && tipCents() === 0) {
+    const legacyPayload = { ...orderPayload };
+    delete legacyPayload.p_tip_cents;
+    ({ data, error } = await supabaseClient.rpc("place_order", legacyPayload));
+  }
 
   state.isSubmitting = false;
   el.submit.disabled = false;
@@ -1757,7 +1768,9 @@ async function submitReviewedOrder() {
   if (error) {
     console.error(error);
 
-    const message = error.message.includes("Not enough capacity")
+    const message = databaseNeedsTipUpgrade && tipCents() > 0
+      ? "Optional tips are temporarily unavailable. Please remove the tip and place your order again."
+      : error.message.includes("Not enough capacity")
       ? "That pickup date filled up while you were ordering. Please choose another date or reduce your quantity."
       : error.message.includes("Not enough inventory")
         ? "One of those items just sold out. Please review your quantities and try again."
